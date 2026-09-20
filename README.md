@@ -28,28 +28,28 @@ A warm, neo-brutalist personal website featuring multimedia showcases, an intera
 ## 📁 Repository Structure
 
 ```
-├── side-b-multipage/             # Frontend website files
-│   ├── index.html                # Main homepage
-│   ├── books.html                # Bookshelf
-│   ├── movies.html               # Letterboxd-style movies & reviews
-│   ├── music.html                # Songs, albums & artists
-│   ├── thoughts.html             # Media pinboard (photos & videos)
-│   ├── hobbies.html              # Hobbies scrapbook
-│   ├── admin.html                # Private admin panel
-│   ├── movies.js                 # Letterboxd grid, filters & share modal
-│   ├── content-loader.js         # Dynamic content renderer
-│   ├── cloudflare-config.js      # Cloudflare API endpoint configuration
-│   ├── cloudflare-client.js      # Cloudflare D1 & Media client library
-│   ├── admin.js                  # Admin authentication & CRUD logic
-│   ├── assets/                   # Site media & styling assets
-│   └── backup-supabase/          # Backup of historical Supabase records
+├── index.html                # Main homepage
+├── books.html                # Bookshelf
+├── movies.html               # Letterboxd-style movies & reviews
+├── music.html                # Songs, albums & artists
+├── thoughts.html             # Media pinboard (photos & videos)
+├── hobbies.html              # Hobbies scrapbook
+├── admin.html                # Private admin panel
+├── movies.js                 # Letterboxd grid, filters & share modal
+├── content-loader.js         # Dynamic content renderer
+├── cloudflare-config.js      # Cloudflare API endpoint configuration
+├── cloudflare-client.js      # Cloudflare D1 & Media client library
+├── admin.js                  # Admin authentication & CRUD logic
+├── assets/                   # Site media & styling assets
+├── backup-supabase/          # Backup of historical Supabase records
 │
-├── cloudflare-backend/           # Cloudflare Worker & D1 Database
-│   ├── src/index.js              # Serverless API Worker
-│   ├── schema.sql                # D1 database schema
-│   ├── wrangler.jsonc            # Wrangler worker configuration
+├── cloudflare-backend/       # Cloudflare Worker & D1 Database
+│   ├── src/index.js          # Serverless API Worker
+│   ├── schema.sql            # D1 database schema
+│   ├── wrangler.jsonc        # Wrangler worker configuration
 │   └── migrate-supabase-to-cloudflare.js # Migration script
 │
+├── vercel.json               # Vercel deployment configuration
 └── README.md
 ```
 
@@ -57,7 +57,7 @@ A warm, neo-brutalist personal website featuring multimedia showcases, an intera
 
 ## 🚀 Running Locally
 
-1. Open a terminal in `side-b-multipage`:
+1. Open a terminal in the project root:
    ```bash
    python -m http.server 8000
    ```
