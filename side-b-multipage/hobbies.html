@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Hobbies</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- ==========================================
+             HEADER
+        =========================================== -->
+
+        <div class="page-header">
+
+            <a href="index.html" class="back">
+                ← Home
+            </a>
+
+            <div class="page-title">
+
+                <h1>🎮 Hobbies</h1>
+
+                <p>
+                    Things I enjoy doing when i have free time.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==========================================
+             HOBBIES - SCRAPBOOK STACK
+        =========================================== -->
+
+        <section class="hobbies-stack">
+
+            <div class="hobby-stack">
+
+                <!-- Travel -->
+                <div class="hobby-card card-6" id="hobby-travel" data-record-id="hobby-travel">
+
+                    <img src="assets/hobbies/travel.jpg" alt="Travel">
+
+                    <h2>Travel</h2>
+
+                </div>
+
+
+                <!-- Gym -->
+                <div class="hobby-card card-5" id="hobby-gym" data-record-id="hobby-gym">
+
+                    <img src="assets/hobbies/gym.jpg" alt="Gym">
+
+                    <h2>Gym</h2>
+
+                </div>
+
+
+                <!-- Coffee -->
+                <div class="hobby-card card-4" id="hobby-coffee" data-record-id="hobby-coffee">
+
+                    <img src="assets/hobbies/coffee.jpg" alt="Coffee">
+
+                    <h2>Coffee</h2>
+
+                </div>
+
+
+                <!-- Walking -->
+                <div class="hobby-card card-3" id="hobby-walking" data-record-id="hobby-walking">
+
+                    <img src="assets/hobbies/walking.jpg" alt="Walking">
+
+                    <h2>A Walk</h2>
+
+                </div>
+
+
+                <!-- Coding -->
+                <div class="hobby-card card-2" id="hobby-coding" data-record-id="hobby-coding">
+
+                    <img src="assets/hobbies/coding.jpg" alt="Coding">
+
+                    <h2>Coding</h2>
+
+                </div>
+
+
+                <!-- Football -->
+                <div class="hobby-card card-1" id="hobby-football" data-record-id="hobby-football" data-top="true">
+
+                    <img src="assets/hobbies/football.jpg" alt="Football">
+
+                    <h2>Football</h2>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+    <!-- ==========================================
+         SWIPE / DRAG JAVASCRIPT
+    =========================================== -->
+
+    <script>
+
+        const stack = document.querySelector(".hobby-stack");
+
+        let activeCard = null;
+
+        let startX = 0;
+        let startY = 0;
+
+        let currentX = 0;
+        let currentY = 0;
+
+
+        /* ==========================================
+           UPDATE STACK ORDER
+        =========================================== */
+
+        function updateStack() {
+
+            const cards =
+                stack.querySelectorAll(".hobby-card");
+
+
+            cards.forEach(function (card, index) {
+
+                /*
+                    The later the card appears
+                    in the HTML, the higher its z-index.
+                */
+
+                card.style.zIndex = index + 1;
+
+                card.dataset.top = "false";
+
+            });
+
+
+            /*
+                Last card = top card
+            */
+
+            const topCard =
+                cards[cards.length - 1];
+
+
+            if (topCard) {
+
+                topCard.dataset.top = "true";
+
+            }
+
+        }
+
+
+        /* Initial stack */
+
+        updateStack();
+        window.updateStack = updateStack;
+
+
+        /* ==========================================
+           GET TOP CARD
+        =========================================== */
+
+        function getTopCard() {
+
+            return stack.querySelector(
+                ".hobby-card[data-top='true']"
+            );
+
+        }
+
+
+        /* ==========================================
+           START DRAG
+        =========================================== */
+
+        stack.addEventListener(
+            "pointerdown",
+            function (event) {
+
+                const card = getTopCard();
+
+                if (!card) return;
+
+
+                activeCard = card;
+
+
+                startX = event.clientX;
+                startY = event.clientY;
+
+                currentX = 0;
+                currentY = 0;
+
+
+                activeCard.classList.add(
+                    "dragging"
+                );
+
+
+                /*
+                    Keeps receiving pointer movement
+                    even if mouse leaves the card.
+                */
+
+                activeCard.setPointerCapture(
+                    event.pointerId
+                );
+
+            }
+        );
+
+
+        /* ==========================================
+           DRAG CARD
+        =========================================== */
+
+        stack.addEventListener(
+            "pointermove",
+            function (event) {
+
+                if (!activeCard) return;
+
+
+                currentX =
+                    event.clientX - startX;
+
+                currentY =
+                    event.clientY - startY;
+
+
+                const rotation =
+                    currentX / 12;
+
+
+                activeCard.style.transform =
+                    `translate(${currentX}px, ${currentY}px)
+                         rotate(${rotation}deg)`;
+
+            }
+        );
+
+
+        /* ==========================================
+           RELEASE CARD
+        =========================================== */
+
+        stack.addEventListener(
+            "pointerup",
+            function () {
+
+                if (!activeCard) return;
+
+
+                const card = activeCard;
+
+                const distance = currentX;
+
+
+                card.classList.remove(
+                    "dragging"
+                );
+
+
+                activeCard = null;
+
+
+                /* ==================================
+                   SWIPE LEFT
+                ================================== */
+
+                if (distance < -100) {
+
+                    card.style.transition =
+                        "transform .35s ease, opacity .35s ease";
+
+                    card.style.transform =
+                        "translateX(-600px) rotate(-25deg)";
+
+                    card.style.opacity = "0";
+
+
+                    setTimeout(function () {
+
+                        /*
+                            Move the old top card
+                            to the bottom.
+                        */
+
+                        stack.insertBefore(
+                            card,
+                            stack.firstElementChild
+                        );
+
+
+                        /*
+                            Reset card
+                        */
+
+                        card.style.transition = "";
+                        card.style.transform = "";
+                        card.style.opacity = "";
+
+
+                        /*
+                            IMPORTANT:
+                            Recalculate stack order.
+                        */
+
+                        updateStack();
+
+                    }, 350);
+
+
+                    return;
+
+                }
+
+
+                /* ==================================
+                   SWIPE RIGHT
+                ================================== */
+
+                if (distance > 100) {
+
+                    card.style.transition =
+                        "transform .35s ease, opacity .35s ease";
+
+                    card.style.transform =
+                        "translateX(600px) rotate(25deg)";
+
+                    card.style.opacity = "0";
+
+
+                    setTimeout(function () {
+
+                        /*
+                            Move old top card
+                            to the bottom.
+                        */
+
+                        stack.insertBefore(
+                            card,
+                            stack.firstElementChild
+                        );
+
+
+                        /*
+                            Reset card
+                        */
+
+                        card.style.transition = "";
+                        card.style.transform = "";
+                        card.style.opacity = "";
+
+
+                        /*
+                            Recalculate stack order.
+                        */
+
+                        updateStack();
+
+                    }, 350);
+
+
+                    return;
+
+                }
+
+
+                /* ==================================
+                   NOT ENOUGH MOVEMENT
+                ================================== */
+
+                card.style.transition =
+                    "transform .25s ease";
+
+
+                card.style.transform = "";
+
+
+                setTimeout(function () {
+
+                    card.style.transition = "";
+
+                }, 250);
+
+            }
+        );
+
+
+        /* ==========================================
+           POINTER CANCEL
+        =========================================== */
+
+        stack.addEventListener(
+            "pointercancel",
+            function () {
+
+                if (!activeCard) return;
+
+
+                activeCard.style.transition =
+                    "transform .25s ease";
+
+                activeCard.style.transform = "";
+
+                activeCard.classList.remove(
+                    "dragging"
+                );
+
+                activeCard = null;
+
+            }
+        );
+
+    </script>
+
+    <script src="cloudflare-config.js"></script>
+    <script src="cloudflare-client.js"></script>
+    <script src="content-loader.js"></script>
+
+</body>
+
+</html>

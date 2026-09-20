@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "anand-site-api",
+  "main": "src/index.js",
+  "compatibility_date": "2024-09-23",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "anand-site-db",
+      "database_id": "75ca1300-dda2-4440-9671-6febbe158d16"
+    }
+  ]
+}

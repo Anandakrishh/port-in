@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Anand</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <div class="hero">
+
+        <!-- Profile -->
+
+        <div class="profile">
+
+            <img src="assets/profile/profile.jpg"
+                 alt="Profile"
+                 class="profile-pic">
+
+            <h2>Hey! Anand here 👋</h2>
+
+            <p class="about">
+                Welcome to my little corner of the internet.
+                Here you'll find my favorite movies, music,
+                random things and hobbies.
+            </p>
+
+        </div>
+
+
+        <!-- Navigation -->
+
+        <div class="grid">
+
+            <a class="card" href="thoughts.html">
+                <h2>📌 Pinboard</h2>
+                <p>Things I pin, save, love, and come back to.</p>
+            </a>
+
+            <a class="card" href="movies.html">
+                <h2>🎬 Movies</h2>
+                <p>Films I've watched and loved.</p>
+            </a>
+
+            <a class="card" href="music.html">
+                <h2>🎵 Music</h2>
+                <p>Albums, artists and songs.</p>
+            </a>
+
+            <a class="card" href="books.html">
+                <h2>📚 Books</h2>
+                <p>Just started reading more. What should I read next?</p>
+            </a>
+
+            <a class="card" href="hobbies.html">
+                <h2>🎯 Hobbies</h2>
+                <p>Things that make me happy.</p>
+            </a>
+
+        </div>
+
+
+        <!-- Socials -->
+
+        <div class="socials">
+
+            <a href="https://x.com/by_krishh"
+               target="_blank"
+               rel="noopener noreferrer">
+                𝕏
+            </a>
+
+            <a href="https://www.snapchat.com/add/thy-ak"
+               target="_blank"
+               rel="noopener noreferrer">
+                👻
+            </a>
+
+            <a href="https://open.spotify.com/user/by.krishh"
+               target="_blank"
+               rel="noopener noreferrer">
+                🎵
+            </a>
+
+            <a href="https://www.reddit.com/user/by_krishh"
+               target="_blank"
+               rel="noopener noreferrer">
+                Reddit
+            </a>
+
+        </div>
+
+
+        <!-- ==========================================
+             ANONYMOUS MESSAGE
+        =========================================== -->
+
+        <section class="anonymous-section">
+
+            <button type="button"
+                    class="send-message-btn"
+                    onclick="openMessageBox()">
+
+                 Send Me a Message
+
+            </button>
+
+        </section>
+
+
+        <!-- ==========================================
+             MESSAGE POPUP
+        =========================================== -->
+
+        <div id="messageBox" class="message-box">
+
+            <div class="message-card">
+
+                <!-- Close -->
+
+                <button type="button"
+                        class="close-message"
+                        onclick="closeMessageBox()">
+
+                    ×
+
+                </button>
+
+
+                <!-- Icon -->
+
+                <div class="message-icon">
+                    💌
+                </div>
+
+
+                <!-- Greeting -->
+
+                <h2>
+                    Hey, stranger 👋
+                </h2>
+
+                <p class="message-intro">
+                    Leave me a anonymous message.
+                    It can be a thought, a book recommendation,
+                    a song, or just a random hello.
+                </p>
+
+
+                <!-- Form -->
+
+                <form action="https://formspree.io/f/xoeajwdr"
+                      method="POST">
+
+                    <label for="message">
+                        Message *
+                    </label>
+
+                    <textarea id="message"
+                              name="message"
+                              placeholder="Write your message here..."
+                              required></textarea>
+
+
+                    <!-- Email subject -->
+
+                    <input type="hidden"
+                           name="_subject"
+                           value="💌 Anonymous message from Anand's website">
+
+
+                    <!-- Send -->
+
+                    <button type="submit"
+                            class="send-final-btn">
+
+                         Send Message
+
+                    </button>
+
+                </form>
+
+
+                <div class="anonymous-note">
+                    🕵️ No name or email required.
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Footer -->
+
+        <footer>
+
+            Thanks for visiting my little corner of the internet. 🌼
+
+        </footer>
+
+    </div>
+
+
+    <!-- ==========================================
+         POPUP JAVASCRIPT
+    =========================================== -->
+
+    <script>
+
+function openMessageBox() {
+
+    document
+        .getElementById("messageBox")
+        .classList.add("show");
+
+}
+
+
+function closeMessageBox() {
+
+    document
+        .getElementById("messageBox")
+        .classList.remove("show");
+
+}
+
+
+/* Close popup when clicking outside */
+
+document
+    .getElementById("messageBox")
+    .addEventListener("click", function(event) {
+
+        if (event.target === this) {
+
+            closeMessageBox();
+
+        }
+
+    });
+
+    </script>
+
+</body>
+
+</html>

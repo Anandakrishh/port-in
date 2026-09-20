@@ -1,0 +1,14 @@
+{
+  "name": "anand-site-backend",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker backend with D1 database and R2 media storage",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "wrangler": "^4.135.0"
+  }
+}

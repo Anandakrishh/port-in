@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Music</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- Header -->
+
+        <div class="page-header">
+
+            <a href="index.html" class="back">
+                ← Home
+            </a>
+
+            <div class="page-title">
+                <h1>🎵 Music</h1>
+                <p>Albums and songs I never get tired of.</p>
+            </div>
+
+        </div>
+
+        <!-- Favorite Albums -->
+
+        <section class="recent">
+
+            <div class="section-heading">
+
+                <span class="badge">Top 5</span>
+
+                <h2>Favorite Albums</h2>
+
+            </div>
+
+            <div class="poster-row">
+
+                <div class="poster" id="album-cinnamon-girl" data-record-id="album-cinnamon-girl">
+                    <a href="https://open.spotify.com/track/2mdEsXPu8ZmkHRRtAdC09e" target="_blank" rel="noopener noreferrer">
+                        <img src="assets/music/Cinnamon girl.jpg" alt="Cinnamon Girl">
+                    </a>
+                </div>
+
+                <div class="poster" id="album-after-hours" data-record-id="album-after-hours">
+                    <a href="https://open.spotify.com/track/2p8IUWQDrpjuFltbdgLOag" target="_blank" rel="noopener noreferrer">
+                        <img src="assets/music/AFTER HOURS.jpg" alt="After Hours">
+                    </a>
+                </div>
+
+                <div class="poster" id="album-lost-my-mind" data-record-id="album-lost-my-mind">
+                    <a href="https://open.spotify.com/artist/3aly4xJOy3LVznzvRIvFYC" target="_blank" rel="noopener noreferrer">
+                        <img src="assets/music/f1.jpg" alt="Lost My Mind">
+                    </a>
+                </div>
+
+                <div class="poster" id="album-nallaru-po" data-record-id="album-nallaru-po">
+                    <a href="https://open.spotify.com/album/7uxUvkZRoulYMf0xZXQoVL" target="_blank" rel="noopener noreferrer">
+                        <img src="assets/music/nallaru po.jpg" alt="Nallaru Po">
+                    </a>
+                </div>
+
+                <div class="poster" id="album-kun-faya-kun" data-record-id="album-kun-faya-kun">
+                    <a href="https://open.spotify.com/album/3RZxrS2dDZlbsYtMRM89v8" target="_blank" rel="noopener noreferrer">
+                        <img src="assets/music/kun faya kun.jpg" alt="Kun Faya Kun">
+                    </a>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- Favorite Artists -->
+
+        <section class="artists">
+
+            <div class="section-heading">
+
+                <span class="badge">Top 5</span>
+
+                <h2>Favorite Artists</h2>
+
+            </div>
+
+            <div class="artist-grid">
+
+                <a href="https://open.spotify.com/artist/00FQb4jTyendYWaN8pK0wa" target="_blank" rel="noopener noreferrer" class="artist-card" id="artist-lana-del-rey" data-record-id="artist-lana-del-rey">
+                    <img src="assets/artists/lana.jpg" alt="Lana Del Rey">
+                    <h3>Lana Del Rey</h3>
+                </a>
+
+                <a href="https://open.spotify.com/artist/3m49WVMU4zCkaVEKb8kFW7" target="_blank" rel="noopener noreferrer" class="artist-card" id="artist-ilaiyaraaja" data-record-id="artist-ilaiyaraaja">
+                    <img src="assets/artists/ILAYARAAJA.jpg" alt="ILAIYARAAJA">
+                    <h3>ILAIYARAAJA</h3>
+                </a>
+
+                <a href="https://open.spotify.com/artist/4zCH9qm4R2DADamUHMCa6O" target="_blank" rel="noopener noreferrer" class="artist-card" id="artist-anirudh" data-record-id="artist-anirudh">
+                    <img src="assets/artists/anirudh.jpg" alt="Anirudh">
+                    <h3>Anirudh</h3>
+                </a>
+
+                <a href="https://open.spotify.com/artist/1mYsTxnqsietFxj1OgoGbG" target="_blank" rel="noopener noreferrer" class="artist-card" id="artist-ar-rahman" data-record-id="artist-ar-rahman">
+                    <img src="assets/artists/AR Rahman.jpg" alt="A. R. Rahman">
+                    <h3>A. R. Rahman</h3>
+                </a>
+
+                <a href="https://open.spotify.com/artist/7dGJo4pcD2V6oG8kP0tJRR" target="_blank" rel="noopener noreferrer" class="artist-card" id="artist-eminem" data-record-id="artist-eminem">
+                    <img src="assets/artists/eminen.jpg" alt="Eminem">
+                    <h3>Eminem</h3>
+                </a>
+
+            </div>
+
+        </section>
+
+        <!-- Favorite Songs -->
+
+        <section class="songs">
+
+            <div class="section-heading">
+
+                <span class="badge">Top 10</span>
+
+                <h2>Favorite Songs</h2>
+
+            </div>
+
+            <div class="song-list">
+
+                <!-- Songs added from the private admin dashboard -->
+                <div id="dynamic-songs" class="dynamic-song-list"></div>
+
+                <a href="https://open.spotify.com/track/4Ouhoi2lAhrLJKFzUqEzwl" target="_blank" class="song-item" id="song-born-to-die" data-record-id="song-born-to-die">
+                    🎵 Born to Die
+                </a>
+                <a href="https://open.spotify.com/track/2nMeu6UenVvwUktBCpLMK9" target="_blank" rel="noopener noreferrer" class="song-item" id="song-young-and-beautiful" data-record-id="song-young-and-beautiful">
+                    🎵 Young and Beautiful
+                </a>
+
+                <a href="https://open.spotify.com/track/1NZs6n6hl8UuMaX0UC0YTz" target="_blank" rel="noopener noreferrer" class="song-item" id="song-brooklyn-baby" data-record-id="song-brooklyn-baby">
+                    🎵 Brooklyn Baby
+                </a>
+
+                <a href="https://open.spotify.com/track/21qg0IBZf8R12qHd9A3AA4" target="_blank" rel="noopener noreferrer" class="song-item" id="song-salvatore" data-record-id="song-salvatore">
+                    🎵 Salvatore
+                </a>
+
+                <a href="https://open.spotify.com/track/0Dt5EqEckM8jcfMYEdlx2Z" target="_blank" rel="noopener noreferrer" class="song-item" id="song-aksomaniac" data-record-id="song-aksomaniac">
+                    🎵 Aksomaniac
+                </a>
+
+                <a href="https://open.spotify.com/track/1wdk6oWXgTJzFiqSXO22tb" target="_blank" rel="noopener noreferrer" class="song-item" id="song-idhu-naal" data-record-id="song-idhu-naal">
+                    🎵 Idhu Naal
+                </a>
+
+                <a href="https://open.spotify.com/track/5NChQ2tXB9q9D8kdkLTWOL" target="_blank" rel="noopener noreferrer" class="song-item" id="song-hosanna" data-record-id="song-hosanna">
+                    🎵 Hosanna
+                </a>
+
+                <a href="https://open.spotify.com/track/6dcsOnOSmg2P30jyHS2TR2" target="_blank" rel="noopener noreferrer" class="song-item" id="song-oru-paadhikadhavu-neeyadi" data-record-id="song-oru-paadhikadhavu-neeyadi">
+                    🎵 Oru Paadhikadhavu Neeyadi
+                </a>
+
+                <a href="https://open.spotify.com/track/5PvwPy5eRO8BPwpRzCHK3D" target="_blank" rel="noopener noreferrer" class="song-item" id="song-sunn-raha-hai" data-record-id="song-sunn-raha-hai">
+                    🎵 Sunn Raha Hai
+                </a>
+
+                <a href="https://open.spotify.com/track/1HNSUQPFhmGDJyHxyIsYXG" target="_blank" rel="noopener noreferrer" class="song-item" id="song-manjal-veyil" data-record-id="song-manjal-veyil">
+                    🎵 Manjal Veyil
+                </a>
+
+
+            </div>
+
+        </section>
+
+    </div>
+
+<script src="cloudflare-config.js"></script>
+<script src="cloudflare-client.js"></script>
+<script src="content-loader.js"></script>
+
+</body>
+
+</html>

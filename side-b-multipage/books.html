@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Books</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+</head>
+
+
+<body>
+
+    <div class="container books-container">
+
+
+        <!-- ==========================================
+             HEADER
+        =========================================== -->
+
+        <div class="page-header">
+
+            <a href="index.html" class="back">
+                ← Home
+            </a>
+
+            <div class="page-title">
+
+                <h1>📚 Books</h1>
+
+                <p>
+                    Books I've read, loved and want to read.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ==========================================
+             BOOKS
+        =========================================== -->
+
+        <section class="books-section">
+
+            <div class="books-row">
+
+
+                <!-- ==================================
+                     BOOK 1
+                =================================== -->
+
+                <div class="book" id="book-atomic-habits" data-record-id="book-atomic-habits">
+
+                    <img src="assets/books/atomic-habits.jpg"
+                         alt="Atomic Habits">
+
+                    <div class="book-title-row">
+
+                        <h3>Atomic Habits</h3>
+
+                    </div>
+
+                    <!-- <p>2024</p> -->
+
+                </div>
+
+
+                <!-- ==================================
+                     BOOK 2
+                =================================== -->
+
+                <div class="book" id="book-alchemist" data-record-id="book-alchemist">
+
+                    <img src="assets/books/alchemist.jpg"
+                         alt="The Alchemist">
+
+                    <div class="book-title-row">
+
+                        <h3>The Alchemist</h3>
+
+                    </div>
+
+                    <!-- <p>2024</p> -->
+
+                </div>
+
+
+                <!-- ==================================
+                     BOOK 3
+                =================================== -->
+
+                <div class="book" id="book-48-laws" data-record-id="book-48-laws">
+
+                    <img src="assets/books/The 48 Laws of Power.jpg"
+                         alt="The 48 Laws of Power">
+
+                    <div class="book-title-row">
+
+                        <h3>The 48 Laws of Power</h3>
+
+                    </div>
+
+                    <!-- <p>2024</p> -->
+
+                </div>
+
+
+                <!-- ==================================
+                     BOOK 4
+                =================================== -->
+
+                <div class="book" id="book-will-you-love-me" data-record-id="book-will-you-love-me">
+
+                    <img src="assets/books/1.jpg"
+                         alt="Book 4">
+
+                    <div class="book-title-row">
+
+                        <h3>Will you love me?</h3>
+
+                    </div>
+
+                    <!-- <p>2024</p> -->
+
+                </div>
+
+
+                <!-- ==================================
+                     BOOK 5
+                =================================== -->
+
+                <div class="book" id="book-it-ends-with-us" data-record-id="book-it-ends-with-us">
+
+                    <img src="assets/books/It Ends with Us_ A Novel.jpg"
+                         alt="Book 5">
+
+                    <div class="book-title-row">
+
+                        <h3>It Ends with us</h3>
+
+                    </div>
+
+                    <!-- <p>2024</p> -->
+
+                </div>
+
+
+                <!-- ==================================
+                     BOOK 6
+                =================================== -->
+
+                <div class="book" id="book-strangers-again" data-record-id="book-strangers-again">
+
+                    <img src="assets/books/2.jpg"
+                         alt="Book 6">
+
+                    <div class="book-title-row">
+
+                        <h3>Can we be Strangers again?</h3>
+
+                    </div>
+
+                    <!-- <p>2024</p> -->
+
+                </div>
+
+                <!-- Content added from the private admin dashboard -->
+                <div id="dynamic-books" class="dynamic-books"></div>
+
+                </div>
+
+            </section>
+
+
+        <!-- ==========================================
+             BOOK SUGGESTION
+        =========================================== -->
+
+        <section class="book-suggestion">
+
+            <div class="suggestion-content">
+
+                <h2>Recommend me a book</h2>
+
+                <p>
+                    I've recently started reading more. If you have a book you love, I'd love to hear your suggestion!
+                </p>
+
+                <form action="https://formspree.io/f/xdenavll" method="POST" class="suggestion-form">
+
+                    <textarea name="message" placeholder="Tell me the book and why I should read it..." required></textarea>
+
+                    <button type="submit">Send recommendation</button>
+
+                </form>
+
+            </div>
+
+        </section>
+
+
+        </div>
+
+        <script src="cloudflare-config.js"></script>
+        <script src="cloudflare-client.js"></script>
+        <script src="content-loader.js"></script>
+
+    </body>
+
+    </html>

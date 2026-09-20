@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Anand — Private Admin</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+        <style>
+        .admin-page{max-width:900px;margin:0 auto;padding:40px 0 80px}.admin-top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:30px}.admin-top h1{margin:0;font-family:'Space Grotesk',sans-serif}.admin-panel{background:#FFFDF8;border:3px solid #2B2926;border-radius:20px;box-shadow:6px 6px #2B2926;padding:25px;margin-bottom:25px}.admin-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}.admin-tabs button,.admin-actions button,.admin-form button{border:2px solid #2B2926;background:#D9D3EA;color:#2B2926;border-radius:10px;padding:10px 14px;font-family:'Space Grotesk',sans-serif;font-weight:700;cursor:pointer;box-shadow:3px 3px #2B2926;transition:all .15s ease}.admin-tabs button.active{background:#F3B5BF}.admin-form{display:grid;gap:13px}.admin-form label{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700}.admin-form input,.admin-form textarea,.admin-form select{width:100%;box-sizing:border-box;padding:11px;border:2px solid #2B2926;border-radius:10px;background:#F8F3EA;font-family:'IBM Plex Mono',monospace}.admin-form textarea{min-height:110px;resize:vertical}.admin-form button{justify-self:start}.admin-hidden{display:none!important}.admin-message{font-family:'IBM Plex Mono',monospace;font-size:12px;margin-top:12px}.admin-list{display:grid;gap:10px}.admin-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border:2px solid #2B2926;border-radius:12px;background:#F8F3EA}.admin-item strong{font-family:'Space Grotesk',sans-serif}.admin-item button{border:2px solid #2B2926;background:#F3B5BF;border-radius:8px;padding:7px 10px;cursor:pointer;font-weight:700}.login-box{max-width:420px;margin:90px auto}.login-box h1{text-align:center}.small-note{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#66615B}@media(max-width:600px){.admin-page{padding:25px 0 60px}.admin-top{align-items:flex-start;flex-direction:column}.admin-item{align-items:flex-start;flex-direction:column}}
+
+        /* Old Records Section */
+        .old-records-header{margin-bottom:20px}.old-records-title-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:8px}.old-records-title-row h2{margin:0;font-family:'Space Grotesk',sans-serif;font-size:24px}.badge{display:inline-flex;align-items:center;padding:5px 12px;background:#D9D3EA;border:2px solid #2B2926;border-radius:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700}.old-records-controls{display:flex;flex-direction:column;gap:12px;margin-top:14px}.old-records-search-box input{width:100%;padding:12px 14px;border:2px solid #2B2926;border-radius:12px;background:#F8F3EA;font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;box-sizing:border-box}.old-records-search-box input:focus{background:#FFFDF8;box-shadow:2px 2px #2B2926}.old-records-pills{display:flex;gap:8px;flex-wrap:wrap}.filter-pill{border:2px solid #2B2926;background:#F8F3EA;color:#2B2926;border-radius:10px;padding:7px 12px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;cursor:pointer;box-shadow:2px 2px #2B2926;transition:all .15s ease}.filter-pill:hover{background:#D9D3EA}.filter-pill.active{background:#A8C9A1;box-shadow:1px 1px #2B2926}.old-records-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px;margin-top:20px}.old-record-card{background:#FFFDF8;border:2.5px solid #2B2926;border-radius:16px;box-shadow:4px 4px #2B2926;padding:14px;display:flex;flex-direction:column;gap:10px;transition:transform .2s ease}.old-record-card:hover{transform:translateY(-2px);box-shadow:6px 6px #2B2926}.old-record-media-row{display:flex;gap:12px;align-items:flex-start}.old-record-thumbnail{width:65px;height:90px;border-radius:8px;border:2px solid #2B2926;object-fit:cover;background:#EFE9DB;flex-shrink:0}.old-record-thumbnail.square{height:65px;border-radius:50%}.old-record-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}.old-record-badges{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.cat-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;padding:2px 7px;border:1.5px solid #2B2926;border-radius:6px;background:#D9D3EA}.src-tag{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;padding:2px 6px;border:1px solid #777;border-radius:6px;color:#555;background:#F0EAE1}.src-tag.dynamic{background:#A8C9A1;color:#2B2926;border-color:#2B2926}.old-record-title{margin:2px 0 0;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;line-height:1.25;word-break:break-word;color:#2B2926}.old-record-meta{margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#66615B;line-height:1.4;word-break:break-word}.old-record-meta .stars{color:#F5B301;font-weight:bold}.old-record-actions{display:flex;gap:8px;margin-top:auto;padding-top:10px;border-top:1.5px dashed #D5CEBF}.record-edit-btn,.record-delete-btn{flex:1;border:2px solid #2B2926;border-radius:8px;padding:8px 10px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-align:center;box-shadow:2px 2px #2B2926;transition:all .15s ease}.record-edit-btn{background:#A8C9A1}.record-edit-btn:hover{background:#94b98d;transform:translateY(-1px)}.record-delete-btn{background:#F3B5BF}.record-delete-btn:hover{background:#e29ea9;transform:translateY(-1px)}
+
+        /* Modal Styles */
+        .admin-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px}.admin-modal-backdrop{position:absolute;inset:0;background:rgba(43,41,38,0.65);backdrop-filter:blur(4px)}.admin-modal-card{position:relative;background:#FFFDF8;border:3.5px solid #2B2926;border-radius:22px;box-shadow:8px 8px #2B2926;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;padding:24px;z-index:1}.admin-modal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:12px}.admin-modal-title-wrap h3{margin:6px 0 0;font-family:'Space Grotesk',sans-serif;font-size:20px;color:#2B2926}.admin-modal-close{background:#F8F3EA;border:2px solid #2B2926;border-radius:50%;width:32px;height:32px;font-size:18px;font-weight:bold;cursor:pointer;display:flex;align-items:center;justify-content:center}.admin-modal-close:hover{background:#F3B5BF}.admin-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}.admin-btn-primary{background:#A8C9A1!important;border:2px solid #2B2926;border-radius:10px;padding:10px 16px;font-family:'Space Grotesk',sans-serif;font-weight:700;cursor:pointer;box-shadow:3px 3px #2B2926}.admin-btn-secondary{background:#F8F3EA!important;border:2px solid #2B2926;border-radius:10px;padding:10px 14px;font-family:'Space Grotesk',sans-serif;font-weight:700;cursor:pointer;box-shadow:3px 3px #2B2926}.edit-media-preview-row{display:flex;gap:14px;align-items:center}.edit-media-preview-box{width:70px;height:95px;border:2px solid #2B2926;border-radius:8px;background:#EFE9DB;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}.edit-media-preview-box img{width:100%;height:100%;object-fit:cover}.edit-media-inputs{flex:1;display:flex;flex-direction:column;gap:4px}
+    </style>
+</head>
+<body>
+<div class="container">
+    <main class="admin-page">
+        <section id="loginView" class="admin-panel login-box">
+            <h1>🔐 Private Admin</h1>
+            <p class="small-note">This page is for Anand only.</p>
+            <form id="loginForm" class="admin-form">
+                <label>Email</label>
+                <input id="loginEmail" type="email" autocomplete="username" required>
+                <label>Password</label>
+                <input id="loginPassword" type="password" autocomplete="current-password" required>
+                <button type="submit">Login</button>
+            </form>
+            <div id="loginMessage" class="admin-message"></div>
+        </section>
+
+        <section id="dashboardView" class="admin-hidden">
+            <div class="admin-top">
+                <div>
+                    <a href="index.html" class="back">← Site</a>
+                    <h1>🔐 Admin</h1>
+                </div>
+                <button id="logoutBtn" class="admin-tabs button">Logout</button>
+            </div>
+
+            <div class="admin-panel">
+                <div class="admin-tabs">
+                    <button data-type="book" class="active">📚 Book</button>
+                    <button data-type="movie">🎬 Movie</button>
+                    <button data-type="song">🎵 Song</button>
+                    <button data-type="pinboard">📌 Pinboard</button>
+                    <button data-type="hobby">🎮 Hobby</button>
+                    <button data-type="old_records">📜 Old record</button>
+                </div>
+
+                <div id="creationPanel">
+                    <form id="contentForm" class="admin-form">
+                        <div id="commonTitleField">
+                            <label id="titleLabel">Title</label>
+                            <input id="title" required>
+                        </div>
+
+                        <div id="bookFields" class="admin-hidden">
+                            <label>Status</label>
+                            <select id="bookStatus">
+                                <option value="finished">Finished</option>
+                                <option value="bought">Bought</option>
+                                <option value="need-to-buy">Need to Buy</option>
+                            </select>
+                        </div>
+
+                        <div id="movieFields" class="admin-hidden">
+                            <label>Year</label>
+                            <input id="movieYear" type="number" min="1888" max="2100">
+                            <label>Genre</label>
+                            <input id="movieGenre" placeholder="e.g. Drama, Romance, Comedy">
+                            <label>Rating</label>
+                            <input id="movieRating" type="number" min="0" max="5" step="0.5" value="5">
+                            <label>Review</label>
+                            <textarea id="movieReview" placeholder="Your short review..."></textarea>
+                        </div>
+
+                        <div id="songFields" class="admin-hidden">
+                            <label>Song link</label>
+                            <input id="songLink" type="url" placeholder="https://open.spotify.com/...">
+                        </div>
+
+                        <div id="pinFields" class="admin-hidden">
+                            <label>Media type</label>
+                            <select id="pinType"><option value="image">Image</option><option value="video">Video</option></select>
+                            <label>Caption (optional)</label>
+                            <input id="pinCaption">
+                        </div>
+
+                        <div id="imageField">
+                            <label id="mediaLabel">Cover image</label>
+                            <input id="mediaFile" type="file" accept="image/*" required>
+                        </div>
+
+                        <button type="submit">＋ Add</button>
+                        <div id="formMessage" class="admin-message"></div>
+                    </form>
+                </div>
+
+                <!-- OLD RECORDS TAB VIEW -->
+                <div id="oldRecordsView" class="admin-hidden">
+                    <div class="old-records-header">
+                        <div class="old-records-title-row">
+                            <h2>📜 All Published Site Records</h2>
+                            <span id="oldRecordsCount" class="badge">0 records</span>
+                        </div>
+                        <p class="small-note">Manage all records across Books, Movies, Pinboard, Hobbies, and Music. Edit details or remove any item anytime.</p>
+
+                        <div class="old-records-controls">
+                            <div class="old-records-search-box">
+                                <input type="text" id="oldRecordsSearch" placeholder="🔍 Search records by title, category, year, artist...">
+                            </div>
+                            <div class="old-records-pills" id="oldRecordsFilterPills">
+                                <button type="button" class="filter-pill active" data-category="all">All</button>
+                                <button type="button" class="filter-pill" data-category="book">📚 Books</button>
+                                <button type="button" class="filter-pill" data-category="movie">🎬 Movies</button>
+                                <button type="button" class="filter-pill" data-category="music">🎵 Music</button>
+                                <button type="button" class="filter-pill" data-category="pinboard">📌 Pinboard</button>
+                                <button type="button" class="filter-pill" data-category="hobby">🎮 Hobbies</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="oldRecordsLoading" class="admin-message" style="text-align: center; padding: 20px;">Loading records...</div>
+                    <div id="oldRecordsList" class="old-records-grid"></div>
+                </div>
+            </div>
+
+            <section id="recentSection" class="admin-panel">
+                <h2>Recent items</h2>
+                <div id="adminList" class="admin-list"></div>
+            </section>
+        </section>
+
+        <!-- EDIT RECORD MODAL -->
+        <div id="editRecordModal" class="admin-modal admin-hidden">
+            <div class="admin-modal-backdrop" id="editModalBackdrop"></div>
+            <div class="admin-modal-card">
+                <div class="admin-modal-header">
+                    <div class="admin-modal-title-wrap">
+                        <span id="editModalBadge" class="cat-tag">Record</span>
+                        <h3 id="editModalTitle">Edit Record</h3>
+                    </div>
+                    <button type="button" id="editModalClose" class="admin-modal-close" aria-label="Close">×</button>
+                </div>
+
+                <form id="editRecordForm" class="admin-form">
+                    <input type="hidden" id="editRecordId">
+                    <input type="hidden" id="editRecordCategory">
+                    <input type="hidden" id="editRecordSource">
+                    <input type="hidden" id="editRecordTable">
+
+                    <div id="editTitleField">
+                        <label id="editTitleLabel">Title / Name</label>
+                        <input id="editTitle" required>
+                    </div>
+
+                    <!-- Books specific -->
+                    <div id="editBookFields" class="admin-hidden">
+                        <label>Status</label>
+                        <select id="editBookStatus">
+                            <option value="finished">Finished</option>
+                            <option value="bought">Bought</option>
+                            <option value="need-to-buy">Need to Buy</option>
+                        </select>
+                    </div>
+
+                    <!-- Movies specific -->
+                    <div id="editMovieFields" class="admin-hidden">
+                        <label>Year</label>
+                        <input id="editMovieYear" type="number" min="1888" max="2100">
+                        <label>Genre</label>
+                        <input id="editMovieGenre" placeholder="e.g. Drama, Romance, Comedy">
+                        <label>Rating (0 to 5)</label>
+                        <input id="editMovieRating" type="number" min="0" max="5" step="0.5">
+                        <label>Review</label>
+                        <textarea id="editMovieReview" placeholder="Review..."></textarea>
+                    </div>
+
+                    <!-- Music / Song / Album specific -->
+                    <div id="editMusicFields" class="admin-hidden">
+                        <label>Spotify / Stream Link</label>
+                        <input id="editMusicLink" type="url" placeholder="https://open.spotify.com/...">
+                    </div>
+
+                    <!-- Pinboard specific -->
+                    <div id="editPinFields" class="admin-hidden">
+                        <label>Caption</label>
+                        <input id="editPinCaption" placeholder="Optional caption">
+                    </div>
+
+                    <!-- Media field -->
+                    <div id="editMediaField">
+                        <label id="editMediaLabel">Cover / Poster / Media</label>
+                        <div class="edit-media-preview-row">
+                            <div id="editMediaThumbnailWrap" class="edit-media-preview-box">
+                                <img id="editMediaPreviewImg" src="" alt="Preview" style="display:none;">
+                                <video id="editMediaPreviewVideo" src="" controls style="display:none; max-width: 66px;"></video>
+                            </div>
+                            <div class="edit-media-inputs">
+                                <label class="small-note">Upload new file (replaces current):</label>
+                                <input id="editMediaFileInput" type="file" accept="image/*,video/*">
+                                <label class="small-note" style="margin-top: 4px;">Or direct image URL:</label>
+                                <input id="editMediaUrlInput" type="text" placeholder="https://...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-modal-actions">
+                        <button type="button" id="editCancelBtn" class="admin-btn-secondary">Cancel</button>
+                        <button type="submit" id="editSaveBtn" class="admin-btn-primary">💾 Save Changes</button>
+                    </div>
+                    <div id="editFormMessage" class="admin-message"></div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="cloudflare-config.js"></script>
+<script src="cloudflare-client.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
