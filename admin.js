@@ -76,83 +76,9 @@
     let allRecordsCache = [];
 
     /* ==========================================
-       STATIC RECORDS CATALOG
+       STATIC RECORDS CATALOG (MIGRATED TO D1)
     ========================================== */
-    const STATIC_RECORDS = [
-        // --- BOOKS ---
-        { id: "book-atomic-habits", category: "book", source: "static", title: "Atomic Habits", image_url: "assets/books/atomic-habits.jpg", status: "finished" },
-        { id: "book-alchemist", category: "book", source: "static", title: "The Alchemist", image_url: "assets/books/alchemist.jpg", status: "finished" },
-        { id: "book-48-laws", category: "book", source: "static", title: "The 48 Laws of Power", image_url: "assets/books/The 48 Laws of Power.jpg", status: "finished" },
-        { id: "book-will-you-love-me", category: "book", source: "static", title: "Will you love me?", image_url: "assets/books/1.jpg", status: "finished" },
-        { id: "book-it-ends-with-us", category: "book", source: "static", title: "It Ends with us", image_url: "assets/books/It Ends with Us_ A Novel.jpg", status: "finished" },
-        { id: "book-strangers-again", category: "book", source: "static", title: "Can we be Strangers again?", image_url: "assets/books/2.jpg", status: "finished" },
-
-        // --- MOVIES ---
-        { id: "movie-meiyazhagan", category: "movie", source: "static", title: "Meiyazhagan", year: 2024, rating: 5, genre: "Drama, Feel-good", review: "A movie that makes you smile, reflect, and miss the people who once made life beautiful. One of those rare films that quietly touches your heart.", image_url: "assets/posters/Meiyazhagan.jpg" },
-        { id: "movie-13-going-on-30", category: "movie", source: "static", title: "13 going on 30", year: 2004, rating: 4.5, genre: "Comedy, Romance, Fantasy", review: "Lighthearted on the surface, but surprisingly meaningful underneath. 13 Going on 30 is the kind of movie that never loses its charm.", image_url: "assets/posters/13 going on 30.jpg" },
-        { id: "movie-27-dresses", category: "movie", source: "static", title: "27 dresses", year: 2008, rating: 4.5, genre: "Romance, Comedy", review: "Light, entertaining, and full of feel-good moments. It reminds you that the best love stories begin when you stop living for everyone else.", image_url: "assets/posters/27 dresses.jpg" },
-        { id: "movie-mersal", category: "movie", source: "static", title: "Mersal", year: 2017, rating: 4.5, genre: "Action, Thriller", review: "Packed with whistle-worthy moments, gripping twists, and unforgettable screen presence.", image_url: "assets/posters/Mersal.jpg" },
-        { id: "movie-shes-the-man", category: "movie", source: "static", title: "she's the man", year: 2006, rating: 4, genre: "Comedy, Romance, Sports", review: "Funny, chaotic, and surprisingly heartfelt.", image_url: "assets/posters/she's the man.jpg" },
-        { id: "movie-kumbalangi-nights", category: "movie", source: "static", title: "Kumbalangi nights", year: 2019, rating: 4, genre: "Drama, Family, Comedy", review: "Every character feels real, making it an unforgettable cinematic experience. Kumbalangi Nights stays with you long after it ends.", image_url: "assets/posters/k nigths.jpg" },
-        { id: "movie-home", category: "movie", source: "static", title: "Home", year: 2021, rating: 4, genre: "Drama, Family, Comedy", review: "Beautifully written, deeply relatable, and effortlessly touching. Home is the kind of film that stays in your heart long after the credits roll.", image_url: "assets/posters/home.jpg" },
-        { id: "movie-premam", category: "movie", source: "static", title: "Premam", year: 2015, rating: 5, genre: "Romance, Drama, Comedy", review: "Premam only gets better with every rewatch.", image_url: "assets/posters/Premam.jpg" },
-
-        // --- MUSIC: ALBUMS ---
-        { id: "album-cinnamon-girl", category: "music", source: "static", subType: "album", title: "Cinnamon Girl (Album)", image_url: "assets/music/Cinnamon girl.jpg", link: "https://open.spotify.com/track/2mdEsXPu8ZmkHRRtAdC09e" },
-        { id: "album-after-hours", category: "music", source: "static", subType: "album", title: "After Hours (Album)", image_url: "assets/music/AFTER HOURS.jpg", link: "https://open.spotify.com/track/2p8IUWQDrpjuFltbdgLOag" },
-        { id: "album-lost-my-mind", category: "music", source: "static", subType: "album", title: "Lost My Mind (Album)", image_url: "assets/music/f1.jpg", link: "https://open.spotify.com/artist/3aly4xJOy3LVznzvRIvFYC" },
-        { id: "album-nallaru-po", category: "music", source: "static", subType: "album", title: "Nallaru Po (Album)", image_url: "assets/music/nallaru po.jpg", link: "https://open.spotify.com/album/7uxUvkZRoulYMf0xZXQoVL" },
-        { id: "album-kun-faya-kun", category: "music", source: "static", subType: "album", title: "Kun Faya Kun (Album)", image_url: "assets/music/kun faya kun.jpg", link: "https://open.spotify.com/album/3RZxrS2dDZlbsYtMRM89v8" },
-
-        // --- MUSIC: ARTISTS ---
-        { id: "artist-lana-del-rey", category: "music", source: "static", subType: "artist", title: "Lana Del Rey (Artist)", image_url: "assets/artists/lana.jpg", link: "https://open.spotify.com/artist/00FQb4jTyendYWaN8pK0wa" },
-        { id: "artist-ilaiyaraaja", category: "music", source: "static", subType: "artist", title: "ILAIYARAAJA (Artist)", image_url: "assets/artists/ILAYARAAJA.jpg", link: "https://open.spotify.com/artist/3m49WVMU4zCkaVEKb8kFW7" },
-        { id: "artist-anirudh", category: "music", source: "static", subType: "artist", title: "Anirudh (Artist)", image_url: "assets/artists/anirudh.jpg", link: "https://open.spotify.com/artist/4zCH9qm4R2DADamUHMCa6O" },
-        { id: "artist-ar-rahman", category: "music", source: "static", subType: "artist", title: "A. R. Rahman (Artist)", image_url: "assets/artists/AR Rahman.jpg", link: "https://open.spotify.com/artist/1mYsTxnqsietFxj1OgoGbG" },
-        { id: "artist-eminem", category: "music", source: "static", subType: "artist", title: "Eminem (Artist)", image_url: "assets/artists/eminen.jpg", link: "https://open.spotify.com/artist/7dGJo4pcD2V6oG8kP0tJRR" },
-
-        // --- MUSIC: SONGS ---
-        { id: "song-born-to-die", category: "music", source: "static", subType: "song", title: "Born to Die", link: "https://open.spotify.com/track/4Ouhoi2lAhrLJKFzUqEzwl" },
-        { id: "song-young-and-beautiful", category: "music", source: "static", subType: "song", title: "Young and Beautiful", link: "https://open.spotify.com/track/2nMeu6UenVvwUktBCpLMK9" },
-        { id: "song-brooklyn-baby", category: "music", source: "static", subType: "song", title: "Brooklyn Baby", link: "https://open.spotify.com/track/1NZs6n6hl8UuMaX0UC0YTz" },
-        { id: "song-salvatore", category: "music", source: "static", subType: "song", title: "Salvatore", link: "https://open.spotify.com/track/21qg0IBZf8R12qHd9A3AA4" },
-        { id: "song-aksomaniac", category: "music", source: "static", subType: "song", title: "Aksomaniac", link: "https://open.spotify.com/track/0Dt5EqEckM8jcfMYEdlx2Z" },
-        { id: "song-idhu-naal", category: "music", source: "static", subType: "song", title: "Idhu Naal", link: "https://open.spotify.com/track/1wdk6oWXgTJzFiqSXO22tb" },
-        { id: "song-hosanna", category: "music", source: "static", subType: "song", title: "Hosanna", link: "https://open.spotify.com/track/5NChQ2tXB9q9D8kdkLTWOL" },
-        { id: "song-oru-paadhikadhavu-neeyadi", category: "music", source: "static", subType: "song", title: "Oru Paadhikadhavu Neeyadi", link: "https://open.spotify.com/track/6dcsOnOSmg2P30jyHS2TR2" },
-        { id: "song-sunn-raha-hai", category: "music", source: "static", subType: "song", title: "Sunn Raha Hai", link: "https://open.spotify.com/track/5PvwPy5eRO8BPwpRzCHK3D" },
-        { id: "song-manjal-veyil", category: "music", source: "static", subType: "song", title: "Manjal Veyil", link: "https://open.spotify.com/track/1HNSUQPFhmGDJyHxyIsYXG" },
-
-        // --- HOBBIES ---
-        { id: "hobby-travel", category: "hobby", source: "static", title: "Travel", image_url: "assets/hobbies/travel.jpg" },
-        { id: "hobby-gym", category: "hobby", source: "static", title: "Gym", image_url: "assets/hobbies/gym.jpg" },
-        { id: "hobby-coffee", category: "hobby", source: "static", title: "Coffee", image_url: "assets/hobbies/coffee.jpg" },
-        { id: "hobby-walking", category: "hobby", source: "static", title: "A Walk", image_url: "assets/hobbies/walking.jpg" },
-        { id: "hobby-coding", category: "hobby", source: "static", title: "Coding", image_url: "assets/hobbies/coding.jpg" },
-        { id: "hobby-football", category: "hobby", source: "static", title: "Football", image_url: "assets/hobbies/football.jpg" },
-
-        // --- PINBOARD ---
-        { id: "pin-1", category: "pinboard", source: "static", title: "Pin 1 (Video)", media_url: "assets/thoughts/1v.mp4", media_type: "video" },
-        { id: "pin-2", category: "pinboard", source: "static", title: "Pin 2", media_url: "assets/thoughts/2.jpeg", media_type: "image" },
-        { id: "pin-3", category: "pinboard", source: "static", title: "Pin 3", media_url: "assets/thoughts/3.jpg", media_type: "image" },
-        { id: "pin-4", category: "pinboard", source: "static", title: "Pin 4", media_url: "assets/thoughts/4.jpg", media_type: "image" },
-        { id: "pin-5", category: "pinboard", source: "static", title: "Pin 5", media_url: "assets/thoughts/5.jpg", media_type: "image" },
-        { id: "pin-6", category: "pinboard", source: "static", title: "Pin 6", media_url: "assets/thoughts/6.jpg", media_type: "image" },
-        { id: "pin-7", category: "pinboard", source: "static", title: "Pin 7", media_url: "assets/thoughts/7.jpg", media_type: "image" },
-        { id: "pin-8", category: "pinboard", source: "static", title: "Pin 8", media_url: "assets/thoughts/8.jpg", media_type: "image" },
-        { id: "pin-9", category: "pinboard", source: "static", title: "Pin 9", media_url: "assets/thoughts/9.jpg", media_type: "image" },
-        { id: "pin-10", category: "pinboard", source: "static", title: "Pin 10", media_url: "assets/thoughts/10.jpg", media_type: "image" },
-        { id: "pin-11", category: "pinboard", source: "static", title: "Pin 11", media_url: "assets/thoughts/11.jpg", media_type: "image" },
-        { id: "pin-12", category: "pinboard", source: "static", title: "Pin 12", media_url: "assets/thoughts/12.jpg", media_type: "image" },
-        { id: "pin-13", category: "pinboard", source: "static", title: "Pin 13", media_url: "assets/thoughts/1.jpg", media_type: "image" },
-        { id: "pin-14", category: "pinboard", source: "static", title: "Pin 14 (Lana)", media_url: "assets/thoughts/lana.jpg", media_type: "image" },
-        { id: "pin-15", category: "pinboard", source: "static", title: "Pin 15 (Ashin)", media_url: "assets/thoughts/ashin.jpg", media_type: "image" },
-        { id: "pin-16", category: "pinboard", source: "static", title: "Pin 16 (Video)", media_url: "assets/thoughts/V1.mp4", media_type: "video" },
-        { id: "pin-17", category: "pinboard", source: "static", title: "Pin 17 (Sam)", media_url: "assets/thoughts/sam.jpg", media_type: "image" },
-        { id: "pin-18", category: "pinboard", source: "static", title: "Pin 18", media_url: "assets/thoughts/13.jpg", media_type: "image" },
-        { id: "pin-19", category: "pinboard", source: "static", title: "Pin 19", media_url: "assets/thoughts/1330.jpg", media_type: "image" },
-        { id: "pin-20", category: "pinboard", source: "static", title: "Pin 20", media_url: "assets/thoughts/P1.jpg", media_type: "image" }
-    ];
+    const STATIC_RECORDS = [];
 
     /* ==========================================
        ESCAPE HTML & SAFE URL
@@ -245,7 +171,7 @@
        UPDATE CREATION FORM
     ========================================== */
     function updateForm() {
-        bookFields.classList.add("admin-hidden");
+        bookFields.classList.toggle("admin-hidden", currentType !== "book");
         movieFields.classList.toggle("admin-hidden", currentType !== "movie");
         songFields.classList.toggle("admin-hidden", currentType !== "song");
         pinFields.classList.toggle("admin-hidden", currentType !== "pinboard");
@@ -359,7 +285,17 @@
                 };
             }
 
-            await cfClient.addRecord(table, row);
+            const added = await cfClient.addRecord(table, row);
+
+            const watchedInput = document.getElementById("movieWatchedDate");
+            if (currentType === "movie" && watchedInput && watchedInput.value && added && added.id) {
+                try {
+                    const state = await cfClient.getState();
+                    if (!state.overrides) state.overrides = {};
+                    state.overrides[added.id] = { ...(state.overrides[added.id] || {}), watched_date: watchedInput.value };
+                    await cfClient.saveState(state);
+                } catch (_) {}
+            }
 
             form.reset();
             updateForm();
@@ -425,110 +361,133 @@
     }
 
     /* ==========================================
-       LOAD OLD RECORDS (MERGED CATALOG + DYNAMIC)
+       LOAD ALL RECORDS (100% DYNAMIC FROM D1)
     ========================================== */
     async function loadOldRecords() {
         oldRecordsLoading.style.display = "block";
         oldRecordsList.innerHTML = "";
 
-        const [state, books, movies, songs, pinboard, hobbies] = await Promise.all([
-            cfClient.getState(),
-            cfClient.getRecords("books"),
-            cfClient.getRecords("movies"),
-            cfClient.getRecords("songs"),
-            cfClient.getRecords("pinboard"),
-            cfClient.getRecords("hobbies")
-        ]);
+        try {
+            const [books, movies, songs, pinboard, hobbies, state] = await Promise.all([
+                cfClient.getRecords("books"),
+                cfClient.getRecords("movies"),
+                cfClient.getRecords("songs"),
+                cfClient.getRecords("pinboard"),
+                cfClient.getRecords("hobbies"),
+                cfClient.getState().catch(() => ({ overrides: {} }))
+            ]);
 
-        const deletedIds = new Set(state.deletedIds || []);
-        const overrides = state.overrides || {};
+            const overrides = (state && state.overrides) || {};
+            const dynamicRecords = [];
 
-        // 1. Process Static Records
-        const activeStaticRecords = STATIC_RECORDS
-            .filter(item => !deletedIds.has(item.id))
-            .map(item => {
-                const copy = { ...item };
-                if (overrides[item.id]) {
-                    Object.assign(copy, overrides[item.id]);
+            hobbies.forEach(h => {
+                dynamicRecords.push({
+                    id: h.id,
+                    category: "hobby",
+                    source: "dynamic",
+                    table: "hobbies",
+                    title: h.title || "Untitled Hobby",
+                    image_url: h.image_url || "",
+                    created_at: h.created_at
+                });
+            });
+
+            books.forEach(row => {
+                dynamicRecords.push({
+                    id: row.id,
+                    category: "book",
+                    source: "dynamic",
+                    table: "books",
+                    title: row.title || "Untitled Book",
+                    image_url: row.image_url || "",
+                    status: row.status || "finished",
+                    created_at: row.created_at
+                });
+            });
+
+            movies.forEach(row => {
+                const ov = overrides[row.id] || {};
+                dynamicRecords.push({
+                    id: row.id,
+                    category: "movie",
+                    source: "dynamic",
+                    table: "movies",
+                    title: ov.title || row.title || "Untitled Movie",
+                    year: ov.year !== undefined ? ov.year : row.year,
+                    genre: ov.genre !== undefined ? ov.genre : (row.genre || ""),
+                    rating: ov.rating !== undefined ? ov.rating : row.rating,
+                    review: ov.review !== undefined ? ov.review : (row.review || ""),
+                    image_url: ov.image_url || row.image_url || "",
+                    watched_date: ov.watched_date || row.watched_date || row.created_at || "",
+                    created_at: row.created_at
+                });
+            });
+
+            songs.forEach(row => {
+                let subType = "song";
+                if (row.id.startsWith("album-") || (row.title && row.title.includes("(Album)"))) {
+                    subType = "album";
+                } else if (row.id.startsWith("artist-") || (row.title && row.title.includes("(Artist)"))) {
+                    subType = "artist";
                 }
-                return copy;
+
+                dynamicRecords.push({
+                    id: row.id,
+                    category: "music",
+                    source: "dynamic",
+                    subType: subType,
+                    table: "songs",
+                    title: row.title || "Untitled Music Item",
+                    link: row.link || "",
+                    image_url: row.image_url || "",
+                    created_at: row.created_at
+                });
             });
 
-        // 2. Format Dynamic Records from Cloudflare D1
-        const dynamicRecords = [];
+            pinboard.forEach(row => {
+                const isVideo = row.media_type === "video" || (row.media_url && row.media_url.endsWith(".mp4"));
+                let pinTitle = row.caption ? `Pin: ${row.caption.slice(0, 24)}...` : `Pinboard ${isVideo ? "Video" : "Image"}`;
+                if (row.id.startsWith("pin-")) {
+                    const num = row.id.replace("pin-", "");
+                    pinTitle = `Pin ${num}${isVideo ? " (Video)" : ""}${row.caption ? ` - ${row.caption.slice(0, 20)}` : ""}`;
+                }
 
-        hobbies.forEach(h => {
-            dynamicRecords.push({
-                id: h.id,
-                category: "hobby",
-                source: "dynamic",
-                table: "hobbies",
-                title: h.title || "Untitled Hobby",
-                image_url: h.image_url || "",
-                created_at: h.created_at
+                dynamicRecords.push({
+                    id: row.id,
+                    category: "pinboard",
+                    source: "dynamic",
+                    table: "pinboard",
+                    title: pinTitle,
+                    caption: row.caption || "",
+                    media_type: isVideo ? "video" : (row.media_type || "image"),
+                    media_url: row.media_url || "",
+                    image_url: !isVideo ? (row.media_url || "") : "",
+                    created_at: row.created_at
+                });
             });
-        });
 
-        books.forEach(row => {
-            dynamicRecords.push({
-                id: row.id,
-                category: "book",
-                source: "dynamic",
-                table: "books",
-                title: row.title || "Untitled Book",
-                image_url: row.image_url || "",
-                status: row.status || "finished",
-                created_at: row.created_at
-            });
-        });
+            // Sort newest additions to the top
+            dynamicRecords.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
-        movies.forEach(row => {
-            dynamicRecords.push({
-                id: row.id,
-                category: "movie",
-                source: "dynamic",
-                table: "movies",
-                title: row.title || "Untitled Movie",
-                year: row.year,
-                genre: row.genre || "",
-                rating: row.rating,
-                review: row.review || "",
-                image_url: row.image_url || "",
-                created_at: row.created_at
-            });
-        });
+            // Deduplicate records by category and normalized title / ID
+            const seenRecords = new Set();
+            const uniqueRecords = [];
+            for (const r of dynamicRecords) {
+                const key = `${r.category}:${(r.title || r.caption || r.id).trim().toLowerCase()}`;
+                if (!seenRecords.has(key) && !seenRecords.has(r.id)) {
+                    seenRecords.add(key);
+                    seenRecords.add(r.id);
+                    uniqueRecords.push(r);
+                }
+            }
 
-        songs.forEach(row => {
-            dynamicRecords.push({
-                id: row.id,
-                category: "music",
-                source: "dynamic",
-                subType: "song",
-                table: "songs",
-                title: row.title || "Untitled Song",
-                link: row.link || "",
-                image_url: row.image_url || "",
-                created_at: row.created_at
-            });
-        });
-
-        pinboard.forEach(row => {
-            dynamicRecords.push({
-                id: row.id,
-                category: "pinboard",
-                source: "dynamic",
-                table: "pinboard",
-                title: row.caption ? `Pin: ${row.caption.slice(0, 24)}...` : `Pinboard ${row.media_type || "item"}`,
-                caption: row.caption || "",
-                media_type: row.media_type || "image",
-                media_url: row.media_url || "",
-                image_url: row.media_type === "image" ? row.media_url : "",
-                created_at: row.created_at
-            });
-        });
-
-        allRecordsCache = [...activeStaticRecords, ...dynamicRecords];
-        oldRecordsLoading.style.display = "none";
+            allRecordsCache = uniqueRecords;
+        } catch (err) {
+            console.error("Failed to load records from D1:", err);
+            oldRecordsList.innerHTML = `<p class="admin-message" style="text-align:center;">Failed to load records from database: ${escapeHtml(err.message || err)}</p>`;
+        } finally {
+            oldRecordsLoading.style.display = "none";
+        }
 
         renderFilteredOldRecords();
     }
@@ -666,7 +625,8 @@
         editRecordSource.value = record.source;
         editRecordTable.value = record.table || "";
 
-        editModalBadge.textContent = `${record.source === "dynamic" ? "Dynamic" : "Original"} ${record.category.toUpperCase()}`;
+        const typeLabel = record.subType ? record.subType.toUpperCase() : record.category.toUpperCase();
+        editModalBadge.textContent = typeLabel;
         editModalTitle.textContent = `Edit: ${record.title}`;
 
         editTitle.value = record.title || record.caption || "";
@@ -683,6 +643,11 @@
             editMovieGenre.value = record.genre || "";
             editMovieRating.value = record.rating !== undefined ? record.rating : 5;
             editMovieReview.value = record.review || "";
+            const editMovieWatchedDate = document.getElementById("editMovieWatchedDate");
+            if (editMovieWatchedDate) {
+                const rawDate = record.watched_date || record.created_at || "";
+                editMovieWatchedDate.value = rawDate ? rawDate.slice(0, 10) : "";
+            }
         } else if (record.category === "music") {
             editMusicLink.value = record.link || "";
         } else if (record.category === "pinboard") {
@@ -706,7 +671,7 @@
         }
 
         editMediaFileInput.value = "";
-        editMediaUrlInput.value = mediaSrc.startsWith("http") ? mediaSrc : "";
+        editMediaUrlInput.value = mediaSrc || "";
 
         editRecordModal.classList.remove("admin-hidden");
     }
@@ -719,6 +684,12 @@
     editModalClose.addEventListener("click", closeEditModal);
     editModalBackdrop.addEventListener("click", closeEditModal);
     editCancelBtn.addEventListener("click", closeEditModal);
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !editRecordModal.classList.contains("admin-hidden")) {
+            closeEditModal();
+        }
+    });
 
     /* ==========================================
        SAVE EDITED RECORD
@@ -764,6 +735,8 @@
                     itemOverride.genre = editMovieGenre.value.trim();
                     itemOverride.rating = Number(editMovieRating.value) || 0;
                     itemOverride.review = editMovieReview.value.trim();
+                    const wDate = document.getElementById("editMovieWatchedDate")?.value;
+                    if (wDate) itemOverride.watched_date = wDate;
                 } else if (category === "music") {
                     itemOverride.link = editMusicLink.value.trim();
                 } else if (category === "pinboard") {
@@ -771,6 +744,9 @@
                 }
 
                 state.overrides[id] = itemOverride;
+                if (Array.isArray(state.deletedIds)) {
+                    state.deletedIds = state.deletedIds.filter(dId => dId !== id);
+                }
                 await cfClient.saveState(state);
             } else {
                 // Dynamic Record in D1 table
@@ -786,6 +762,16 @@
                     updateData.rating = Number(editMovieRating.value) || 0;
                     updateData.review = editMovieReview.value.trim();
                     if (newMediaUrl) updateData.image_url = newMediaUrl;
+
+                    const wDate = document.getElementById("editMovieWatchedDate")?.value;
+                    if (wDate) {
+                        try {
+                            const state = await cfClient.getState();
+                            if (!state.overrides) state.overrides = {};
+                            state.overrides[id] = { ...(state.overrides[id] || {}), watched_date: wDate };
+                            await cfClient.saveState(state);
+                        } catch (_) {}
+                    }
                 } else if (table === "songs") {
                     updateData.title = finalTitle;
                     updateData.link = editMusicLink.value.trim();

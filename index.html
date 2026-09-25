@@ -235,19 +235,20 @@ function closeMessageBox() {
 
 
 /* Close popup when clicking outside */
-
 document
     .getElementById("messageBox")
     .addEventListener("click", function(event) {
-
         if (event.target === this) {
-
             closeMessageBox();
-
         }
-
     });
 
+/* Close popup with Escape key */
+window.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") {
+        closeMessageBox();
+    }
+});
     </script>
 
 </body>

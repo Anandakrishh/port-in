@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="style.css?v=20260920-v6">
     <link rel="stylesheet" href="movies.css?v=20260920-v6">
 
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
     <style>
         /* Warm Letterboxd Neo-Brutalist Theme Guard */
         .lb-browse-bar {
@@ -34,17 +34,6 @@
         }
         .lb-dropdown.is-filtered .lb-dropdown-trigger {
             background: #A8C9A1 !important;
-        }
-        .lb-view-btn {
-            background: #F7F2E9 !important;
-            color: #2B2926 !important;
-            border: 2px solid #2B2926 !important;
-            box-shadow: 2px 2px #2B2926 !important;
-        }
-        .lb-view-btn.active {
-            background: #D9D3EA !important;
-            box-shadow: 1px 1px #2B2926 !important;
-            transform: translateY(1px) !important;
         }
         .lb-dropdown-menu {
             display: none !important;
@@ -76,12 +65,14 @@
             color: #2B2926 !important;
         }
 
-        /* Seamless Grid View for all static & dynamic cards */
+        /* Movie Poster Grid (Uniform View) */
+        .reviews,
         .reviews.grid-view {
             display: grid !important;
             grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
             gap: 22px 18px !important;
         }
+        .reviews .movie-card,
         .reviews.grid-view .movie-card {
             display: flex;
             flex-direction: column !important;
@@ -93,16 +84,19 @@
             gap: 0 !important;
             width: 100% !important;
             margin: 0 !important;
+            cursor: pointer !important;
         }
         .movie-card.is-hidden,
         .reviews .movie-card.is-hidden,
         .movie-card[style*="display: none"] {
             display: none !important;
         }
+        .reviews .movie-card:hover,
         .reviews.grid-view .movie-card:hover {
             transform: translateY(-4px) !important;
             box-shadow: 6px 6px #2B2926 !important;
         }
+        .reviews .movie-poster-wrap,
         .reviews.grid-view .movie-poster-wrap {
             width: 100% !important;
             aspect-ratio: 2 / 3 !important;
@@ -112,6 +106,7 @@
             background: #EFE9DB !important;
             margin-bottom: 8px !important;
         }
+        .reviews .movie-poster-wrap img,
         .reviews.grid-view .movie-poster-wrap img {
             width: 100% !important;
             height: 100% !important;
@@ -120,6 +115,7 @@
             border-radius: 0 !important;
             box-shadow: none !important;
         }
+        .reviews .movie-info,
         .reviews.grid-view .movie-info {
             padding: 0 !important;
             width: 100% !important;
@@ -127,46 +123,309 @@
             flex-direction: column !important;
             flex: 1 !important;
         }
+        .reviews .movie-header-row,
         .reviews.grid-view .movie-header-row {
             flex-direction: column !important;
             align-items: flex-start !important;
             gap: 2px !important;
             margin-bottom: 4px !important;
         }
+        .reviews .movie-info h2,
         .reviews.grid-view .movie-info h2 {
             font-size: 15px !important;
             line-height: 1.25 !important;
             font-weight: 700 !important;
             color: #2B2926 !important;
         }
+        .reviews .movie-info .year,
         .reviews.grid-view .movie-info .year {
             font-size: 12px !important;
             color: #666 !important;
         }
+        .reviews .movie-meta-row,
         .reviews.grid-view .movie-meta-row {
             margin-bottom: 8px !important;
             gap: 6px !important;
         }
+        .reviews .stars,
         .reviews.grid-view .stars {
             font-size: 13px !important;
             color: #F5B301 !important;
         }
+        .reviews .stars span,
         .reviews.grid-view .stars span {
             font-size: 11px !important;
             color: #2B2926 !important;
         }
+        .reviews .movie-genres,
         .reviews.grid-view .movie-genres {
             display: none !important;
         }
+        .reviews .movie-info p,
         .reviews.grid-view .movie-info p {
             display: none !important;
         }
+        .reviews .movie-share-btn,
         .reviews.grid-view .movie-share-btn {
             width: 100% !important;
             justify-content: center !important;
             padding: 6px 10px !important;
             font-size: 11px !important;
             margin-top: auto !important;
+        }
+
+        /* Letterboxd Movie Detail Modal */
+        .movie-detail-modal {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 9990 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transition: opacity 0.22s ease !important;
+        }
+        .movie-detail-modal.active {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+        .movie-detail-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 13, 16, 0.88);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .movie-detail-dialog {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 680px;
+            max-height: 90vh;
+            overflow-y: auto;
+            background: #14181c;
+            border: 1px solid #2c3440;
+            border-radius: 14px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            padding: 30px 28px;
+            color: #9ab;
+            box-sizing: border-box;
+        }
+        .movie-detail-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: transparent;
+            border: none;
+            color: #678;
+            font-size: 30px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+        .movie-detail-close:hover {
+            color: #fff;
+            transform: scale(1.1);
+        }
+        .movie-detail-layout {
+            display: flex;
+            gap: 26px;
+            align-items: flex-start;
+        }
+        .movie-detail-poster-wrap {
+            width: 190px;
+            flex-shrink: 0;
+            aspect-ratio: 2 / 3;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #1e242b;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+        }
+        .movie-detail-poster-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .movie-detail-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .movie-detail-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 8px 12px;
+            margin-bottom: 10px;
+            padding-right: 24px;
+        }
+        .movie-detail-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 27px;
+            line-height: 1.15;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0;
+            letter-spacing: -0.2px;
+        }
+        .movie-detail-year {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 18px;
+            font-weight: 400;
+            color: #778899;
+            text-decoration: underline;
+            text-decoration-color: #3b4656;
+            text-underline-offset: 3px;
+        }
+        .movie-detail-rating-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            margin-bottom: 14px;
+        }
+        .movie-detail-stars {
+            color: #00e054;
+            font-size: 19px;
+            letter-spacing: 2px;
+            line-height: 1;
+        }
+        .movie-detail-score {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: #00e054;
+            background: rgba(0, 224, 84, 0.1);
+            border: 1px solid rgba(0, 224, 84, 0.25);
+            padding: 2px 7px;
+            border-radius: 4px;
+        }
+        .movie-detail-watched-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #1e242b;
+            border: 1px solid #2e3844;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: #8fa0b0;
+            font-weight: 500;
+        }
+        .movie-detail-cal-icon {
+            font-size: 11px;
+            line-height: 1;
+        }
+        .lb-count-badge {
+            font-size: 11px;
+            color: #666;
+            font-weight: 500;
+            margin-left: 4px;
+        }
+        .lb-dropdown-item.active .lb-count-badge {
+            color: #2B2926;
+            font-weight: 700;
+        }
+        .movie-detail-genres {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .movie-detail-genre-pill {
+            background: #242c34;
+            color: #8fa0b0;
+            border: 1px solid #2f3944;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 0.3px;
+        }
+        .movie-detail-divider {
+            height: 1px;
+            background: #232a33;
+            margin: 2px 0 14px 0;
+        }
+        .movie-detail-body {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .movie-detail-section-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #567;
+            text-transform: uppercase;
+        }
+        .movie-detail-review {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 14.5px;
+            line-height: 1.68;
+            color: #c8d4dc;
+            margin: 0;
+            white-space: pre-line;
+        }
+        .movie-detail-footer {
+            margin-top: 22px;
+            display: flex;
+            gap: 10px;
+        }
+        .movie-detail-share-btn {
+            background: #242c34;
+            color: #c8d4dc;
+            border: 1px solid #36424e;
+            border-radius: 5px;
+            padding: 7px 14px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        }
+        .movie-detail-share-btn:hover {
+            background: #303b46;
+            color: #ffffff;
+            border-color: #485766;
+        }
+        @media (max-width: 600px) {
+            .movie-detail-dialog {
+                padding: 22px 16px;
+            }
+            .movie-detail-layout {
+                flex-direction: column;
+                align-items: center;
+                gap: 16px;
+            }
+            .movie-detail-poster-wrap {
+                width: 150px;
+            }
+            .movie-detail-header {
+                justify-content: center;
+                padding-right: 0;
+            }
+            .movie-detail-rating-row {
+                justify-content: center;
+            }
+            .movie-detail-footer {
+                justify-content: center;
+            }
+            .movie-detail-review {
+                text-align: left;
+            }
         }
 
         /* Instagram Story Share Modal */
@@ -499,17 +758,17 @@
         <!-- Letterboxd Stats Strip -->
         <div class="lb-stats-strip">
             <div class="lb-stat-item">
-                <span class="lb-stat-number" id="lbStatTotalFilms">8</span>
+                <span class="lb-stat-number" id="lbStatTotalFilms">-</span>
                 <span class="lb-stat-label">Films Logged</span>
             </div>
             <div class="lb-stat-divider"></div>
             <div class="lb-stat-item">
-                <span class="lb-stat-number" id="lbStatAvgRating">4.6 ★</span>
+                <span class="lb-stat-number" id="lbStatAvgRating">-</span>
                 <span class="lb-stat-label">Average Rating</span>
             </div>
             <div class="lb-stat-divider"></div>
             <div class="lb-stat-item">
-                <span class="lb-stat-number" id="lbStatTopGenre">Drama</span>
+                <span class="lb-stat-number" id="lbStatTopGenre">-</span>
                 <span class="lb-stat-label">Favorite Genre</span>
             </div>
         </div>
@@ -529,6 +788,19 @@
                             </svg>
                         </button>
                         <div class="lb-dropdown-menu" id="filterYearMenu">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- MONTH DROPDOWN -->
+                    <div class="lb-dropdown" data-dropdown="month">
+                        <button type="button" class="lb-dropdown-trigger">
+                            <span>MONTH <span class="lb-label-value"></span></span>
+                            <svg class="lb-chevron" width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                                <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="lb-dropdown-menu" id="filterMonthMenu">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
@@ -560,7 +832,7 @@
                             </svg>
                         </button>
                         <div class="lb-dropdown-menu" id="filterSortMenu">
-                            <div class="lb-dropdown-item active" data-filter="sort" data-value="default">Popular / Default</div>
+                            <div class="lb-dropdown-item active" data-filter="sort" data-value="default">Recently Added (Default)</div>
                             <div class="lb-dropdown-divider"></div>
                             <div class="lb-dropdown-item" data-filter="sort" data-value="rating-desc">Highest Rated</div>
                             <div class="lb-dropdown-item" data-filter="sort" data-value="rating-asc">Lowest Rated</div>
@@ -584,29 +856,9 @@
                     </div>
                 </div>
 
-                <!-- Right tools: Result count and View toggle -->
+                <!-- Right tools: Result count -->
                 <div class="lb-tools">
-                    <span class="lb-results-count" id="lbResultsCount">8 films</span>
-                    <div class="lb-view-toggle">
-                        <button type="button" class="lb-view-btn active" data-view="list" title="Detailed List View">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                                <line x1="8" y1="6" x2="21" y2="6"></line>
-                                <line x1="8" y1="12" x2="21" y2="12"></line>
-                                <line x1="8" y1="18" x2="21" y2="18"></line>
-                                <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                                <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                                <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                            </svg>
-                        </button>
-                        <button type="button" class="lb-view-btn" data-view="grid" title="Poster Grid View">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                                <rect x="3" y="3" width="7" height="7"></rect>
-                                <rect x="14" y="3" width="7" height="7"></rect>
-                                <rect x="14" y="14" width="7" height="7"></rect>
-                                <rect x="3" y="14" width="7" height="7"></rect>
-                            </svg>
-                        </button>
-                    </div>
+                    <span class="lb-results-count" id="lbResultsCount"></span>
                 </div>
             </div>
 
@@ -618,309 +870,58 @@
             </div>
         </div>
 
+        <!-- Loading Indicator -->
+        <div id="moviesLoading" class="admin-message" style="text-align: center; padding: 40px; font-family: 'IBM Plex Mono', monospace; color: #666;">Loading film diary...</div>
+
         <!-- Reviews -->
-        <section class="reviews">
-
-            <!-- Movie 1 -->
-            <article class="movie-card" id="movie-meiyazhagan" data-id="meiyazhagan" data-title="Meiyazhagan" data-year="2024" data-rating="5" data-genre="Drama, Feel-good">
-                <div class="movie-poster-wrap">
-                    <img src="assets/posters/Meiyazhagan.jpg" alt="Meiyazhagan">
-                    <div class="grid-card-overlay">
-                        <span class="overlay-rating">★★★★★ 5/5</span>
-                        <span class="overlay-year">2024</span>
-                    </div>
-                </div>
-                <div class="movie-info">
-                    <div class="movie-header-row">
-                        <h2>Meiyazhagan <span class="year">(2024)</span></h2>
-                        <button type="button" class="movie-share-btn" aria-label="Share Meiyazhagan">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="18" cy="5" r="3"></circle>
-                                <circle cx="6" cy="12" r="3"></circle>
-                                <circle cx="18" cy="19" r="3"></circle>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                            </svg>
-                            <span>Share</span>
-                        </button>
-                    </div>
-                    <div class="movie-meta-row">
-                        <div class="stars">★★★★★ <span>5/5</span></div>
-                        <div class="movie-genres">
-                            <span class="genre-pill">Drama</span>
-                            <span class="genre-pill">Feel-good</span>
-                        </div>
-                    </div>
-                    <p>
-                        A movie that makes you smile, reflect, and miss the people who once made life beautiful.
-                        One of those rare films that quietly touches your heart.
-                    </p>
-                </div>
-            </article>
-
-            <!-- Movie 2 -->
-            <article class="movie-card" id="movie-13-going-on-30" data-id="13-going-on-30" data-title="13 going on 30" data-year="2004" data-rating="4.5" data-genre="Comedy, Romance, Fantasy">
-                <div class="movie-poster-wrap">
-                    <img src="assets/posters/13 going on 30.jpg" alt="13 going on 30">
-                    <div class="grid-card-overlay">
-                        <span class="overlay-rating">★★★★½ 4.5/5</span>
-                        <span class="overlay-year">2004</span>
-                    </div>
-                </div>
-                <div class="movie-info">
-                    <div class="movie-header-row">
-                        <h2>13 going on 30 <span class="year">(2004)</span></h2>
-                        <button type="button" class="movie-share-btn" aria-label="Share 13 going on 30">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="18" cy="5" r="3"></circle>
-                                <circle cx="6" cy="12" r="3"></circle>
-                                <circle cx="18" cy="19" r="3"></circle>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                            </svg>
-                            <span>Share</span>
-                        </button>
-                    </div>
-                    <div class="movie-meta-row">
-                        <div class="stars">★★★★☆ <span>4.5/5</span></div>
-                        <div class="movie-genres">
-                            <span class="genre-pill">Comedy</span>
-                            <span class="genre-pill">Romance</span>
-                            <span class="genre-pill">Fantasy</span>
-                        </div>
-                    </div>
-                    <p>
-                        Lighthearted on the surface, but surprisingly meaningful underneath.
-                        13 Going on 30 is the kind of movie that never loses its charm.
-                    </p>
-                </div>
-            </article>
-
-            <!-- Movie 3 -->
-            <article class="movie-card" id="movie-27-dresses" data-id="27-dresses" data-title="27 dresses" data-year="2008" data-rating="4.5" data-genre="Romance, Comedy">
-                <div class="movie-poster-wrap">
-                    <img src="assets/posters/27 dresses.jpg" alt="27 dresses">
-                    <div class="grid-card-overlay">
-                        <span class="overlay-rating">★★★★½ 4.5/5</span>
-                        <span class="overlay-year">2008</span>
-                    </div>
-                </div>
-                <div class="movie-info">
-                    <div class="movie-header-row">
-                        <h2>27 dresses <span class="year">(2008)</span></h2>
-                        <button type="button" class="movie-share-btn" aria-label="Share 27 dresses">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="18" cy="5" r="3"></circle>
-                                <circle cx="6" cy="12" r="3"></circle>
-                                <circle cx="18" cy="19" r="3"></circle>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                            </svg>
-                            <span>Share</span>
-                        </button>
-                    </div>
-                    <div class="movie-meta-row">
-                        <div class="stars">★★★★☆ <span>4.5/5</span></div>
-                        <div class="movie-genres">
-                            <span class="genre-pill">Romance</span>
-                            <span class="genre-pill">Comedy</span>
-                        </div>
-                    </div>
-                    <p>
-                        Light, entertaining, and full of feel-good moments.
-                        It reminds you that the best love stories begin when you stop living for everyone else.
-                    </p>
-                </div>
-            </article>
-
-            <!-- Movie 4 -->
-            <article class="movie-card" id="movie-mersal" data-id="mersal" data-title="Mersal" data-year="2017" data-rating="4.5" data-genre="Action, Thriller">
-                <div class="movie-poster-wrap">
-                    <img src="assets/posters/Mersal.jpg" alt="Mersal">
-                    <div class="grid-card-overlay">
-                        <span class="overlay-rating">★★★★½ 4.5/5</span>
-                        <span class="overlay-year">2017</span>
-                    </div>
-                </div>
-                <div class="movie-info">
-                    <div class="movie-header-row">
-                        <h2>Mersal <span class="year">(2017)</span></h2>
-                        <button type="button" class="movie-share-btn" aria-label="Share Mersal">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="18" cy="5" r="3"></circle>
-                                <circle cx="6" cy="12" r="3"></circle>
-                                <circle cx="18" cy="19" r="3"></circle>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                            </svg>
-                            <span>Share</span>
-                        </button>
-                    </div>
-                    <div class="movie-meta-row">
-                        <div class="stars">★★★★☆ <span>4.5/5</span></div>
-                        <div class="movie-genres">
-                            <span class="genre-pill">Action</span>
-                            <span class="genre-pill">Thriller</span>
-                        </div>
-                    </div>
-                    <p>
-                        Packed with whistle-worthy moments, gripping twists, and unforgettable screen presence.
-                    </p>
-                </div>
-            </article>
-
-            <!-- Movie 5 -->
-            <article class="movie-card" id="movie-shes-the-man" data-id="shes-the-man" data-title="she's the man" data-year="2006" data-rating="4" data-genre="Comedy, Romance, Sports">
-                <div class="movie-poster-wrap">
-                    <img src="assets/posters/she's the man.jpg" alt="she's the man">
-                    <div class="grid-card-overlay">
-                        <span class="overlay-rating">★★★★☆ 4/5</span>
-                        <span class="overlay-year">2006</span>
-                    </div>
-                </div>
-                <div class="movie-info">
-                    <div class="movie-header-row">
-                        <h2>she's the man <span class="year">(2006)</span></h2>
-                        <button type="button" class="movie-share-btn" aria-label="Share she's the man">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="18" cy="5" r="3"></circle>
-                                <circle cx="6" cy="12" r="3"></circle>
-                                <circle cx="18" cy="19" r="3"></circle>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                            </svg>
-                            <span>Share</span>
-                        </button>
-                    </div>
-                    <div class="movie-meta-row">
-                        <div class="stars">★★★★☆ <span>4/5</span></div>
-                        <div class="movie-genres">
-                            <span class="genre-pill">Comedy</span>
-                            <span class="genre-pill">Romance</span>
-                            <span class="genre-pill">Sports</span>
-                        </div>
-                    </div>
-                    <p>
-                        Funny, chaotic, and surprisingly heartfelt.
-                    </p>
-                </div>
-            </article>
-
-            <!-- Movie 6 -->
-            <article class="movie-card" id="movie-kumbalangi-nights" data-id="kumbalangi-nights" data-title="Kumbalangi nights" data-year="2019" data-rating="4" data-genre="Drama, Family, Comedy">
-                <div class="movie-poster-wrap">
-                    <img src="assets/posters/k nigths.jpg" alt="Kumbalangi nights">
-                    <div class="grid-card-overlay">
-                        <span class="overlay-rating">★★★★☆ 4/5</span>
-                        <span class="overlay-year">2019</span>
-                    </div>
-                </div>
-                <div class="movie-info">
-                    <div class="movie-header-row">
-                        <h2>Kumbalangi nights <span class="year">(2019)</span></h2>
-                        <button type="button" class="movie-share-btn" aria-label="Share Kumbalangi nights">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="18" cy="5" r="3"></circle>
-                                <circle cx="6" cy="12" r="3"></circle>
-                                <circle cx="18" cy="19" r="3"></circle>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                            </svg>
-                            <span>Share</span>
-                        </button>
-                    </div>
-                    <div class="movie-meta-row">
-                        <div class="stars">★★★★☆ <span>4/5</span></div>
-                        <div class="movie-genres">
-                            <span class="genre-pill">Drama</span>
-                            <span class="genre-pill">Family</span>
-                            <span class="genre-pill">Comedy</span>
-                        </div>
-                    </div>
-                    <p>
-                        Every character feels real, making it an unforgettable cinematic experience.
-                        Kumbalangi Nights stays with you long after it ends.
-                    </p>
-                </div>
-            </article>
-
-            <!-- Movie 7 -->
-            <article class="movie-card" id="movie-home" data-id="home" data-title="Home" data-year="2021" data-rating="4" data-genre="Drama, Family, Comedy">
-                <div class="movie-poster-wrap">
-                    <img src="assets/posters/home.jpg" alt="Home">
-                    <div class="grid-card-overlay">
-                        <span class="overlay-rating">★★★★☆ 4/5</span>
-                        <span class="overlay-year">2021</span>
-                    </div>
-                </div>
-                <div class="movie-info">
-                    <div class="movie-header-row">
-                        <h2>Home <span class="year">(2021)</span></h2>
-                        <button type="button" class="movie-share-btn" aria-label="Share Home">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="18" cy="5" r="3"></circle>
-                                <circle cx="6" cy="12" r="3"></circle>
-                                <circle cx="18" cy="19" r="3"></circle>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                            </svg>
-                            <span>Share</span>
-                        </button>
-                    </div>
-                    <div class="movie-meta-row">
-                        <div class="stars">★★★★☆ <span>4/5</span></div>
-                        <div class="movie-genres">
-                            <span class="genre-pill">Drama</span>
-                            <span class="genre-pill">Family</span>
-                            <span class="genre-pill">Comedy</span>
-                        </div>
-                    </div>
-                    <p>
-                        Beautifully written, deeply relatable, and effortlessly touching.
-                        Home is the kind of film that stays in your heart long after the credits roll.
-                    </p>
-                </div>
-            </article>
-
-            <!-- Movie 8 -->
-            <article class="movie-card" id="movie-premam" data-id="premam" data-title="Premam" data-year="2015" data-rating="5" data-genre="Romance, Drama, Comedy">
-                <div class="movie-poster-wrap">
-                    <img src="assets/posters/Premam.jpg" alt="Premam">
-                    <div class="grid-card-overlay">
-                        <span class="overlay-rating">★★★★★ 5/5</span>
-                        <span class="overlay-year">2015</span>
-                    </div>
-                </div>
-                <div class="movie-info">
-                    <div class="movie-header-row">
-                        <h2>Premam <span class="year">(2015)</span></h2>
-                        <button type="button" class="movie-share-btn" aria-label="Share Premam">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="18" cy="5" r="3"></circle>
-                                <circle cx="6" cy="12" r="3"></circle>
-                                <circle cx="18" cy="19" r="3"></circle>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                            </svg>
-                            <span>Share</span>
-                        </button>
-                    </div>
-                    <div class="movie-meta-row">
-                        <div class="stars">★★★★★ <span>5/5</span></div>
-                        <div class="movie-genres">
-                            <span class="genre-pill">Romance</span>
-                            <span class="genre-pill">Drama</span>
-                            <span class="genre-pill">Comedy</span>
-                        </div>
-                    </div>
-                    <p>
-                        Premam only gets better with every rewatch.
-                    </p>
-                </div>
-            </article>
-
+        <section class="reviews grid-view">
         </section>
 
+    </div>
+
+    <!-- Letterboxd Movie Detail Modal -->
+    <div class="movie-detail-modal" id="movieDetailModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="movieDetailTitle">
+        <div class="movie-detail-backdrop" id="movieDetailBackdrop"></div>
+        <div class="movie-detail-dialog">
+            <button type="button" class="movie-detail-close" id="movieDetailClose" aria-label="Close modal">×</button>
+            <div class="movie-detail-layout">
+                <div class="movie-detail-poster-wrap">
+                    <img id="movieDetailPoster" src="" alt="Movie Poster">
+                </div>
+                <div class="movie-detail-content">
+                    <div class="movie-detail-header">
+                        <h2 id="movieDetailTitle" class="movie-detail-title">Film Title</h2>
+                        <span id="movieDetailYear" class="movie-detail-year">2024</span>
+                    </div>
+                    <div class="movie-detail-rating-row">
+                        <span id="movieDetailStars" class="movie-detail-stars">★★★★★</span>
+                        <span id="movieDetailScore" class="movie-detail-score">5.0 / 5</span>
+                        <div id="movieDetailWatchedBadge" class="movie-detail-watched-badge" style="display: none;">
+                            <span class="movie-detail-cal-icon">🗓️</span>
+                            <span id="movieDetailWatchedText">Sep 2026</span>
+                        </div>
+                        <div id="movieDetailGenres" class="movie-detail-genres"></div>
+                    </div>
+                    <div class="movie-detail-divider"></div>
+                    <div class="movie-detail-body">
+                        <span class="movie-detail-section-label">REVIEW / NOTES</span>
+                        <p id="movieDetailReview" class="movie-detail-review">Movie review text...</p>
+                    </div>
+                    <div class="movie-detail-footer">
+                        <button type="button" id="movieDetailShareBtn" class="movie-detail-share-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="18" cy="5" r="3"></circle>
+                                <circle cx="6" cy="12" r="3"></circle>
+                                <circle cx="18" cy="19" r="3"></circle>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                            </svg>
+                            <span>Share Film</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Instagram Story Share Modal -->
@@ -966,7 +967,7 @@
                         <p id="storyCardReview" class="story-card-quote">"Review quote..."</p>
                     </div>
                     <div class="story-card-footer">
-                        <span>Tap link sticker to read full review ↗</span>
+                        <span>Tap link</span>
                     </div>
                 </div>
             </div>
@@ -976,10 +977,10 @@
     <!-- Toast Notification -->
     <div class="movie-toast" id="movieToast">Link copied! Paste in your Instagram Story.</div>
 
-    <script src="cloudflare-config.js"></script>
-    <script src="cloudflare-client.js"></script>
-    <script src="content-loader.js"></script>
-    <script src="movies.js"></script>
+    <script src="cloudflare-config.js?v=2"></script>
+    <script src="cloudflare-client.js?v=2"></script>
+    <script src="content-loader.js?v=2"></script>
+    <script src="movies.js?v=3"></script>
 
 </body>
 

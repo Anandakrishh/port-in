@@ -10,11 +10,20 @@
     // Current filter and sort state
     const state = {
         year: "all",
+        month: "all", // 1-12 or 'all' (month watched)
         rating: "all",
         genre: "all",
-        sort: "default", // default, rating-desc, rating-asc, year-desc, year-asc, title-asc
-        view: "list"     // list, grid
+        sort: "default" // default, rating-desc, rating-asc, year-desc, year-asc, title-asc
     };
+
+    const MONTH_NAMES = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    const MONTH_SHORT = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
 
     // Helper: generate URL-friendly slug
     function slugify(text) {
@@ -25,20 +34,60 @@
             .replace(/^-+|-+$/g, "");
     }
 
+    // Helper: escape HTML
+    function escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // Helper: parse watched / created timestamp safely
+    function parseWatchedDate(raw) {
+        if (!raw) return null;
+        let str = String(raw).trim();
+        if (str.includes(" ") && !str.includes("T")) {
+            str = str.replace(" ", "T");
+        }
+        const d = new Date(str);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
     // Initialize all movie functionality
     function initMovies() {
-        setupMovieCards();
-        populateFilterDropdowns();
+        try { localStorage.removeItem("lb_preferred_view"); } catch (_) {}
         setupDropdownListeners();
-        setupViewToggle();
+        setupMovieDetailModal();
         setupShareSystem();
-        updateStats();
-        applyFiltersAndSort();
-        handleInboundDeepLink();
+
+        // Only process cards if they are already in the DOM (static or cached)
+        if (document.querySelectorAll(".movie-card").length > 0) {
+            setupMovieCards();
+            populateFilterDropdowns();
+            updateStats();
+            applyFiltersAndSort();
+            handleInboundDeepLink();
+        }
     }
 
     // Ensure every movie card has proper attributes, id, and share button
     function setupMovieCards() {
+        // Deduplicate movie cards in DOM by title & id
+        const seenCards = new Set();
+        document.querySelectorAll(".reviews .movie-card").forEach(card => {
+            const titleEl = card.querySelector("h2");
+            const rawTitle = card.dataset.title || (titleEl ? titleEl.childNodes[0].textContent : "");
+            const key = (rawTitle || card.id || card.dataset.id || "").trim().toLowerCase();
+            if (key && seenCards.has(key)) {
+                card.remove();
+            } else if (key) {
+                seenCards.add(key);
+            }
+        });
+
         const cards = document.querySelectorAll(".movie-card");
         cards.forEach(card => {
             const titleEl = card.querySelector("h2");
@@ -64,6 +113,19 @@
                     const match = yearSpan.textContent.match(/([0-9]{4})/);
                     if (match) card.dataset.year = match[1];
                 }
+            }
+
+            // Extract or ensure watched date & month
+            const rawWatchDate = card.dataset.watchedDate || card.dataset.createdAt || "";
+            const watched = parseWatchedDate(rawWatchDate);
+            if (watched) {
+                card.dataset.watchedMonth = String(watched.getMonth() + 1);
+                card.dataset.watchedYear = String(watched.getFullYear());
+                const day = watched.getDate();
+                const mShort = MONTH_SHORT[watched.getMonth()];
+                const yFull = watched.getFullYear();
+                card.dataset.watchedFormatted = `${day} ${mShort} ${yFull}`;
+                card.dataset.watchedMonthYear = `${MONTH_NAMES[watched.getMonth()]} ${yFull}`;
             }
 
             // Ensure share button exists
@@ -100,6 +162,7 @@
     // Populate dropdown items based on movies currently in DOM
     function populateFilterDropdowns() {
         const cards = Array.from(document.querySelectorAll(".movie-card"));
+        if (cards.length === 0) return;
 
         // Years & Decades
         const years = new Set();
@@ -149,6 +212,33 @@
             });
             genreMenu.innerHTML = html;
         }
+
+        // Watched Months
+        const monthMenu = document.getElementById("filterMonthMenu");
+        if (monthMenu) {
+            const monthCounts = {};
+            for (let i = 1; i <= 12; i++) monthCounts[i] = 0;
+
+            cards.forEach(c => {
+                const m = parseInt(c.dataset.watchedMonth, 10);
+                if (m >= 1 && m <= 12) {
+                    monthCounts[m] = (monthCounts[m] || 0) + 1;
+                }
+            });
+
+            let html = `
+                <div class="lb-dropdown-item${state.month === "all" ? " active" : ""}" data-filter="month" data-value="all">All Months</div>
+                <div class="lb-dropdown-divider"></div>
+            `;
+            MONTH_NAMES.forEach((name, idx) => {
+                const mVal = String(idx + 1);
+                const count = monthCounts[idx + 1] || 0;
+                const badge = count > 0 ? ` <span class="lb-count-badge">(${count})</span>` : "";
+                const isSelected = state.month === mVal;
+                html += `<div class="lb-dropdown-item${isSelected ? " active" : ""}" data-filter="month" data-value="${mVal}">${name}${badge}</div>`;
+            });
+            monthMenu.innerHTML = html;
+        }
     }
 
     // Setup interactive dropdown menus
@@ -195,7 +285,15 @@
             if (dropdown) {
                 const labelSpan = dropdown.querySelector(".lb-label-value");
                 if (labelSpan) {
-                    labelSpan.textContent = value === "all" || value === "default" ? "" : item.textContent;
+                    if (filterType === "month" && value !== "all") {
+                        const mIdx = parseInt(value, 10) - 1;
+                        labelSpan.textContent = `: ${MONTH_SHORT[mIdx] || value}`;
+                    } else if (value === "all" || value === "default") {
+                        labelSpan.textContent = "";
+                    } else {
+                        const cleanText = item.textContent.replace(/\s*\(\d+\)/, "").trim();
+                        labelSpan.textContent = `: ${cleanText}`;
+                    }
                 }
                 dropdown.classList.toggle("is-filtered", value !== "all" && value !== "default");
             }
@@ -219,6 +317,7 @@
     // Reset filters
     function resetAllFilters() {
         state.year = "all";
+        state.month = "all";
         state.rating = "all";
         state.genre = "all";
         state.sort = "default";
@@ -243,6 +342,16 @@
     // Apply filtering and sorting to movie cards
     function applyFiltersAndSort() {
         const cards = Array.from(document.querySelectorAll(".movie-card"));
+
+        // If cards haven't loaded yet, do not flash empty state or "0 films"
+        if (cards.length === 0) {
+            const countEl = document.getElementById("lbResultsCount");
+            if (countEl) countEl.textContent = "";
+            const noResultsEl = document.getElementById("lbNoResults");
+            if (noResultsEl) noResultsEl.style.display = "none";
+            return;
+        }
+
         let visibleCount = 0;
 
         cards.forEach(card => {
@@ -268,13 +377,20 @@
                 ratingMatch = rating >= minRating;
             }
 
+            // Month filter (watched month)
+            let monthMatch = true;
+            if (state.month !== "all") {
+                const watchedMonth = parseInt(card.dataset.watchedMonth || "0", 10);
+                monthMatch = watchedMonth === parseInt(state.month, 10);
+            }
+
             // Genre filter
             let genreMatch = true;
             if (state.genre !== "all") {
                 genreMatch = genres.includes(state.genre);
             }
 
-            const isVisible = yearMatch && ratingMatch && genreMatch;
+            const isVisible = yearMatch && monthMatch && ratingMatch && genreMatch;
             card.classList.toggle("is-hidden", !isVisible);
             if (isVisible) {
                 card.style.removeProperty("display");
@@ -293,10 +409,9 @@
             countEl.textContent = `${visibleCount} film${visibleCount === 1 ? "" : "s"}`;
         }
 
-        // Empty state message
+        // Empty state message - only show if there are loaded cards in DOM but visibleCount is 0
         let noResultsEl = document.getElementById("lbNoResults");
         if (!noResultsEl) {
-            noResultsEl = document.createElement("div");
             noResultsEl = document.createElement("div");
             noResultsEl.id = "lbNoResults";
             noResultsEl.className = "lb-no-results";
@@ -311,17 +426,30 @@
             if (reviewsContainer) reviewsContainer.after(noResultsEl);
             document.getElementById("lbEmptyReset")?.addEventListener("click", resetAllFilters);
         }
-        noResultsEl.style.display = visibleCount === 0 ? "block" : "none";
+        noResultsEl.style.display = (visibleCount === 0 && cards.length > 0) ? "block" : "none";
     }
+
+    const ORIGINAL_MOVIE_ORDER = [
+        "movie-meiyazhagan",
+        "movie-13-going-on-30",
+        "movie-27-dresses",
+        "movie-mersal",
+        "movie-shes-the-man",
+        "movie-kumbalangi-nights",
+        "movie-home",
+        "movie-premam"
+    ];
 
     // Sort visible cards inside container
     function sortCards() {
-        if (state.sort === "default") return;
-
         const container = document.querySelector(".reviews");
         if (!container) return;
 
+        const lingeringLoader = container.querySelector("#moviesLoading");
+        if (lingeringLoader) lingeringLoader.remove();
+
         const cards = Array.from(container.querySelectorAll(".movie-card"));
+        if (cards.length === 0) return;
         cards.sort((a, b) => {
             const ratingA = parseFloat(a.dataset.rating || "0");
             const ratingB = parseFloat(b.dataset.rating || "0");
@@ -331,18 +459,53 @@
             const titleB = (b.dataset.title || "").toLowerCase();
 
             switch (state.sort) {
-                case "rating-desc":
-                    return ratingB - ratingA;
-                case "rating-asc":
-                    return ratingA - ratingB;
+                case "default": {
+                    const idA = a.dataset.recordId || a.id || "";
+                    const idB = b.dataset.recordId || b.id || "";
+                    const isOrigA = ORIGINAL_MOVIE_ORDER.includes(idA);
+                    const isOrigB = ORIGINAL_MOVIE_ORDER.includes(idB);
+
+                    // Both newly added: newest by created_at first
+                    if (!isOrigA && !isOrigB) {
+                        const timeA = new Date(a.dataset.createdAt || 0).getTime();
+                        const timeB = new Date(b.dataset.createdAt || 0).getTime();
+                        if (timeB !== timeA) return timeB - timeA;
+                        return (yearB - yearA) || (ratingB - ratingA);
+                    }
+
+                    // Newly added comes BEFORE original movies!
+                    if (!isOrigA && isOrigB) return -1;
+                    if (isOrigA && !isOrigB) return 1;
+
+                    // Both are original: keep original sequence
+                    return ORIGINAL_MOVIE_ORDER.indexOf(idA) - ORIGINAL_MOVIE_ORDER.indexOf(idB);
+                }
                 case "year-desc":
-                    return yearB - yearA;
+                    return (yearB - yearA) || (ratingB - ratingA);
                 case "year-asc":
-                    return yearA - yearB;
+                    return (yearA - yearB) || (ratingB - ratingA);
+                case "rating-desc":
+                    return (ratingB - ratingA) || (yearB - yearA);
+                case "rating-asc":
+                    return (ratingA - ratingB) || (yearB - yearA);
                 case "title-asc":
                     return titleA.localeCompare(titleB);
-                default:
-                    return 0;
+                default: {
+                    const idA = a.dataset.recordId || a.id || "";
+                    const idB = b.dataset.recordId || b.id || "";
+                    const isOrigA = ORIGINAL_MOVIE_ORDER.includes(idA);
+                    const isOrigB = ORIGINAL_MOVIE_ORDER.includes(idB);
+
+                    if (!isOrigA && !isOrigB) {
+                        const timeA = new Date(a.dataset.createdAt || 0).getTime();
+                        const timeB = new Date(b.dataset.createdAt || 0).getTime();
+                        if (timeB !== timeA) return timeB - timeA;
+                        return (yearB - yearA) || (ratingB - ratingA);
+                    }
+                    if (!isOrigA && isOrigB) return -1;
+                    if (isOrigA && !isOrigB) return 1;
+                    return ORIGINAL_MOVIE_ORDER.indexOf(idA) - ORIGINAL_MOVIE_ORDER.indexOf(idB);
+                }
             }
         });
 
@@ -360,6 +523,11 @@
         if (state.year !== "all") {
             const label = state.year.startsWith("decade-") ? `${state.year.replace("decade-", "")}s` : state.year;
             activeList.push({ type: "year", label: `Year: ${label}` });
+        }
+        if (state.month !== "all") {
+            const mIdx = parseInt(state.month, 10) - 1;
+            const mName = MONTH_NAMES[mIdx] || `Month ${state.month}`;
+            activeList.push({ type: "month", label: `Watched: ${mName}` });
         }
         if (state.rating !== "all") {
             activeList.push({ type: "rating", label: `Rating: ${state.rating}★+` });
@@ -421,41 +589,6 @@
         });
     }
 
-    // View toggle: List view vs Letterboxd Poster Grid view
-    function setupViewToggle() {
-        const toggleButtons = document.querySelectorAll(".lb-view-btn");
-        const reviewsContainer = document.querySelector(".reviews");
-
-        // Restore view preference if stored
-        try {
-            const savedView = localStorage.getItem("lb_preferred_view");
-            if (savedView === "grid" || savedView === "list") {
-                state.view = savedView;
-            }
-        } catch (_) {}
-
-        // Apply initial view state to buttons and container
-        toggleButtons.forEach(b => b.classList.toggle("active", b.dataset.view === state.view));
-        if (reviewsContainer) {
-            reviewsContainer.classList.toggle("grid-view", state.view === "grid");
-        }
-
-        toggleButtons.forEach(btn => {
-            btn.addEventListener("click", () => {
-                const view = btn.dataset.view;
-                if (!view || view === state.view) return;
-
-                state.view = view;
-                try { localStorage.setItem("lb_preferred_view", view); } catch (_) {}
-                toggleButtons.forEach(b => b.classList.toggle("active", b.dataset.view === view));
-
-                if (reviewsContainer) {
-                    reviewsContainer.classList.toggle("grid-view", view === "grid");
-                }
-            });
-        });
-    }
-
     // Letterboxd Stats strip computation
     function updateStats() {
         const cards = Array.from(document.querySelectorAll(".movie-card"));
@@ -501,6 +634,135 @@
                 }
             }
             topGenreEl.textContent = topG;
+        }
+    }
+
+    // ==========================================
+    // LETTERBOXD MOVIE DETAIL MODAL
+    // ==========================================
+
+    let currentDetailCard = null;
+
+    function setupMovieDetailModal() {
+        const backdrop = document.getElementById("movieDetailBackdrop");
+        const closeBtn = document.getElementById("movieDetailClose");
+        const shareBtn = document.getElementById("movieDetailShareBtn");
+
+        if (backdrop) backdrop.addEventListener("click", closeMovieDetailModal);
+        if (closeBtn) closeBtn.addEventListener("click", closeMovieDetailModal);
+
+        if (shareBtn) {
+            shareBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (currentDetailCard) {
+                    closeMovieDetailModal();
+                    openShareModal(currentDetailCard);
+                }
+            });
+        }
+
+        // Clicking any movie card in reviews opens the detail modal
+        document.addEventListener("click", (e) => {
+            if (e.target.closest(".movie-share-btn")) return;
+            const card = e.target.closest(".reviews .movie-card");
+            if (card) {
+                openMovieDetailModal(card);
+            }
+        });
+
+        // Escape key dismisses modals
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                closeMovieDetailModal();
+                closeShareModal();
+            }
+        });
+    }
+
+    function openMovieDetailModal(card) {
+        const modal = document.getElementById("movieDetailModal");
+        if (!modal) return;
+
+        currentDetailCard = card;
+
+        const title = card.dataset.title || card.querySelector("h2")?.childNodes[0]?.textContent?.trim() || "Film";
+        const year = card.dataset.year || card.querySelector(".year")?.textContent?.replace(/[()]/g, "").trim() || "";
+        const rating = card.dataset.rating || "";
+        const genres = (card.dataset.genre || "").split(",").map(g => g.trim()).filter(Boolean);
+        const review = card.querySelector(".movie-info p")?.textContent?.trim() || "No review logged.";
+        const imgEl = card.querySelector(".movie-poster-wrap img") || card.querySelector("img");
+        const imgSrc = imgEl?.src || "";
+
+        // Poster
+        const posterEl = document.getElementById("movieDetailPoster");
+        if (posterEl) {
+            posterEl.src = imgSrc;
+            posterEl.alt = title;
+        }
+
+        // Title
+        const titleEl = document.getElementById("movieDetailTitle");
+        if (titleEl) titleEl.textContent = title;
+
+        // Release Date / Year
+        const yearEl = document.getElementById("movieDetailYear");
+        if (yearEl) {
+            yearEl.textContent = year ? year : "";
+            yearEl.style.display = year ? "inline" : "none";
+        }
+
+        // Rating Stars & Score (Letterboxd green)
+        const starsEl = document.getElementById("movieDetailStars");
+        if (starsEl) {
+            const numRating = parseFloat(rating) || 0;
+            const full = Math.floor(numRating);
+            const starsText = "★".repeat(full) + "☆".repeat(Math.max(0, 5 - full));
+            starsEl.textContent = starsText;
+        }
+
+        const scoreEl = document.getElementById("movieDetailScore");
+        if (scoreEl) {
+            scoreEl.textContent = rating ? `${rating} / 5` : "";
+            scoreEl.style.display = rating ? "inline-block" : "none";
+        }
+
+        // Watched date badge
+        const watchedBadgeEl = document.getElementById("movieDetailWatchedBadge");
+        const watchedTextEl = document.getElementById("movieDetailWatchedText");
+        const watchedDateStr = card.dataset.watchedFormatted || card.dataset.watchedMonthYear;
+        if (watchedBadgeEl && watchedTextEl) {
+            if (watchedDateStr) {
+                watchedTextEl.textContent = `Watched ${watchedDateStr}`;
+                watchedBadgeEl.style.display = "inline-flex";
+            } else {
+                watchedBadgeEl.style.display = "none";
+            }
+        }
+
+        // Genres
+        const genresEl = document.getElementById("movieDetailGenres");
+        if (genresEl) {
+            genresEl.innerHTML = genres.map(g => `<span class="movie-detail-genre-pill">${escapeHtml(g)}</span>`).join("");
+        }
+
+        // Few lines about movie (Review/Synopsis)
+        const reviewEl = document.getElementById("movieDetailReview");
+        if (reviewEl) reviewEl.textContent = review;
+
+        modal.classList.add("active");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+    }
+
+    function closeMovieDetailModal() {
+        const modal = document.getElementById("movieDetailModal");
+        if (modal) {
+            modal.classList.remove("active");
+            modal.setAttribute("aria-hidden", "true");
+            const shareModal = document.getElementById("movieShareModal");
+            if (!shareModal || !shareModal.classList.contains("active")) {
+                document.body.style.overflow = "";
+            }
         }
     }
 
@@ -612,7 +874,11 @@
 
         const cardStars = document.getElementById("storyCardStars");
         if (cardStars) {
-            const starsText = card.querySelector(".stars")?.childNodes[0]?.textContent?.trim() || "★★★★★";
+            const numRating = parseFloat(rating || card.dataset.rating || "0");
+            const full = Math.floor(numRating);
+            const starsText = numRating > 0
+                ? "★".repeat(full) + "☆".repeat(Math.max(0, 5 - full))
+                : (card.querySelector(".stars")?.childNodes[0]?.textContent?.trim() || "★★★★★");
             cardStars.textContent = starsText;
         }
 
@@ -635,7 +901,10 @@
         const modal = document.getElementById("movieShareModal");
         if (modal) {
             modal.classList.remove("active");
-            document.body.style.overflow = "";
+            const detailModal = document.getElementById("movieDetailModal");
+            if (!detailModal || !detailModal.classList.contains("active")) {
+                document.body.style.overflow = "";
+            }
         }
     }
 
@@ -705,13 +974,7 @@
             resetAllFilters();
         }
 
-        // If in grid view, switch to list view so the visitor sees the full card & review
-        if (state.view === "grid") {
-            const listBtn = document.querySelector('.lb-view-btn[data-view="list"]');
-            if (listBtn) listBtn.click();
-        }
-
-        // Smooth scroll to the target movie
+        // Smooth scroll to the target movie and open Letterboxd detail modal
         setTimeout(() => {
             targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
 
@@ -719,6 +982,8 @@
             targetCard.classList.remove("letterboxd-glow");
             void targetCard.offsetWidth; // trigger reflow
             targetCard.classList.add("letterboxd-glow");
+
+            openMovieDetailModal(targetCard);
 
             setTimeout(() => {
                 targetCard.classList.remove("letterboxd-glow");
@@ -728,9 +993,14 @@
 
     // Expose hook so content-loader.js can refresh when dynamic movies load from backend
     window.refreshLetterboxdMovies = function () {
+        const loader = document.getElementById("moviesLoading");
+        if (loader) {
+            loader.remove();
+        }
+
         const reviewsContainer = document.querySelector(".reviews");
         if (reviewsContainer) {
-            reviewsContainer.classList.toggle("grid-view", state.view === "grid");
+            reviewsContainer.classList.add("grid-view");
         }
         setupMovieCards();
         populateFilterDropdowns();

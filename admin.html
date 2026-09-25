@@ -49,7 +49,7 @@
                     <button data-type="song">🎵 Song</button>
                     <button data-type="pinboard">📌 Pinboard</button>
                     <button data-type="hobby">🎮 Hobby</button>
-                    <button data-type="old_records">📜 Old record</button>
+                    <button data-type="old_records">📜 All records</button>
                 </div>
 
                 <div id="creationPanel">
@@ -75,6 +75,8 @@
                             <input id="movieGenre" placeholder="e.g. Drama, Romance, Comedy">
                             <label>Rating</label>
                             <input id="movieRating" type="number" min="0" max="5" step="0.5" value="5">
+                            <label>Date Watched</label>
+                            <input id="movieWatchedDate" type="date">
                             <label>Review</label>
                             <textarea id="movieReview" placeholder="Your short review..."></textarea>
                         </div>
@@ -177,6 +179,8 @@
                         <input id="editMovieGenre" placeholder="e.g. Drama, Romance, Comedy">
                         <label>Rating (0 to 5)</label>
                         <input id="editMovieRating" type="number" min="0" max="5" step="0.5">
+                        <label>Date Watched</label>
+                        <input id="editMovieWatchedDate" type="date">
                         <label>Review</label>
                         <textarea id="editMovieReview" placeholder="Review..."></textarea>
                     </div>
@@ -221,8 +225,8 @@
     </main>
 </div>
 
-<script src="cloudflare-config.js"></script>
-<script src="cloudflare-client.js"></script>
-<script src="admin.js"></script>
+<script src="cloudflare-config.js?v=2"></script>
+<script src="cloudflare-client.js?v=2"></script>
+<script src="admin.js?v=2"></script>
 </body>
 </html>

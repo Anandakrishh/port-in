@@ -18,3 +18,7 @@ desktop.ini
 # Temporary files
 *.tmp
 *.bak
+*.sql
+
+# Local asset backups
+.backup_assets_original/
