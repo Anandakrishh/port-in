@@ -28,6 +28,7 @@
 
     // Old Records Tab Elements
     const oldRecordsView = document.getElementById("oldRecordsView");
+    const readingLogView = document.getElementById("readingLogView");
     const oldRecordsCount = document.getElementById("oldRecordsCount");
     const oldRecordsSearch = document.getElementById("oldRecordsSearch");
     const oldRecordsFilterPills = document.getElementById("oldRecordsFilterPills");
@@ -110,39 +111,29 @@
             dashboardView.classList.remove("admin-hidden");
             loadAdminList();
             if (currentType === "old_records") {
+                creationPanel.classList.add("admin-hidden");
+                recentSection.classList.add("admin-hidden");
+                if (readingLogView) readingLogView.classList.add("admin-hidden");
+                oldRecordsView.classList.remove("admin-hidden");
                 loadOldRecords();
+            } else if (currentType === "reading_log") {
+                creationPanel.classList.add("admin-hidden");
+                recentSection.classList.add("admin-hidden");
+                oldRecordsView.classList.add("admin-hidden");
+                if (readingLogView) readingLogView.classList.remove("admin-hidden");
+                loadReadingLogView();
+            } else {
+                creationPanel.classList.remove("admin-hidden");
+                recentSection.classList.remove("admin-hidden");
+                oldRecordsView.classList.add("admin-hidden");
+                if (readingLogView) readingLogView.classList.add("admin-hidden");
+                updateForm();
             }
         } else {
             loginView.classList.remove("admin-hidden");
             dashboardView.classList.add("admin-hidden");
         }
     }
-
-    /* ==========================================
-       LOGIN
-    ========================================== */
-    loginForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        setMessage(loginMessage, "Logging in...", true);
-
-        try {
-            const email = document.getElementById("loginEmail").value.trim();
-            const password = document.getElementById("loginPassword").value;
-            await cfClient.login(email, password);
-            loginForm.reset();
-            showState();
-        } catch (error) {
-            setMessage(loginMessage, error.message || "Invalid email or password");
-        }
-    });
-
-    /* ==========================================
-       LOGOUT
-    ========================================== */
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-        cfClient.logout();
-        showState();
-    });
 
     /* ==========================================
        TAB SWITCHING
@@ -156,12 +147,20 @@
             if (currentType === "old_records") {
                 creationPanel.classList.add("admin-hidden");
                 recentSection.classList.add("admin-hidden");
+                if (readingLogView) readingLogView.classList.add("admin-hidden");
                 oldRecordsView.classList.remove("admin-hidden");
                 loadOldRecords();
+            } else if (currentType === "reading_log") {
+                creationPanel.classList.add("admin-hidden");
+                recentSection.classList.add("admin-hidden");
+                oldRecordsView.classList.add("admin-hidden");
+                if (readingLogView) readingLogView.classList.remove("admin-hidden");
+                loadReadingLogView();
             } else {
                 creationPanel.classList.remove("admin-hidden");
                 recentSection.classList.remove("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
+                if (readingLogView) readingLogView.classList.add("admin-hidden");
                 updateForm();
             }
         });
@@ -297,6 +296,23 @@
                 } catch (_) {}
             }
 
+            if (currentType === "book" && added && added.id) {
+                try {
+                    const state = await cfClient.getState();
+                    if (!state.overrides) state.overrides = {};
+                    state.overrides[added.id] = {
+                        ...(state.overrides[added.id] || {}),
+                        author: document.getElementById("bookAuthor")?.value.trim() || "",
+                        status: document.getElementById("bookStatus")?.value || "finished",
+                        rating: Number(document.getElementById("bookRating")?.value) || 0,
+                        date_started: document.getElementById("bookDateStarted")?.value || "",
+                        date_finished: document.getElementById("bookDateFinished")?.value || "",
+                        review: document.getElementById("bookReview")?.value.trim() || ""
+                    };
+                    await cfClient.saveState(state);
+                } catch (_) {}
+            }
+
             form.reset();
             updateForm();
             setMessage(formMessage, "Added successfully! ✨", true);
@@ -393,14 +409,20 @@
             });
 
             books.forEach(row => {
+                const ov = overrides[row.id] || {};
                 dynamicRecords.push({
                     id: row.id,
                     category: "book",
                     source: "dynamic",
                     table: "books",
-                    title: row.title || "Untitled Book",
-                    image_url: row.image_url || "",
-                    status: row.status || "finished",
+                    title: ov.title || row.title || "Untitled Book",
+                    author: ov.author || row.author || "",
+                    image_url: ov.image_url || row.image_url || "",
+                    status: ov.status || row.status || "finished",
+                    rating: ov.rating !== undefined ? ov.rating : (row.rating || 0),
+                    date_started: ov.date_started || row.date_started || "",
+                    date_finished: ov.date_finished || row.date_finished || "",
+                    review: ov.review || row.review || "",
                     created_at: row.created_at
                 });
             });
@@ -638,6 +660,11 @@
 
         if (record.category === "book") {
             editBookStatus.value = record.status || "finished";
+            if (document.getElementById("editBookAuthor")) document.getElementById("editBookAuthor").value = record.author || "";
+            if (document.getElementById("editBookRating")) document.getElementById("editBookRating").value = record.rating !== undefined ? record.rating : 5;
+            if (document.getElementById("editBookDateStarted")) document.getElementById("editBookDateStarted").value = record.date_started || "";
+            if (document.getElementById("editBookDateFinished")) document.getElementById("editBookDateFinished").value = record.date_finished || "";
+            if (document.getElementById("editBookReview")) document.getElementById("editBookReview").value = record.review || "";
         } else if (record.category === "movie") {
             editMovieYear.value = record.year || "";
             editMovieGenre.value = record.genre || "";
@@ -730,6 +757,11 @@
 
                 if (category === "book") {
                     itemOverride.status = editBookStatus.value;
+                    itemOverride.author = document.getElementById("editBookAuthor")?.value.trim() || "";
+                    itemOverride.rating = Number(document.getElementById("editBookRating")?.value) || 0;
+                    itemOverride.date_started = document.getElementById("editBookDateStarted")?.value || "";
+                    itemOverride.date_finished = document.getElementById("editBookDateFinished")?.value || "";
+                    itemOverride.review = document.getElementById("editBookReview")?.value.trim() || "";
                 } else if (category === "movie") {
                     itemOverride.year = Number(editMovieYear.value) || null;
                     itemOverride.genre = editMovieGenre.value.trim();
@@ -755,6 +787,21 @@
                     updateData.title = finalTitle;
                     updateData.status = editBookStatus.value;
                     if (newMediaUrl) updateData.image_url = newMediaUrl;
+
+                    try {
+                        const state = await cfClient.getState();
+                        if (!state.overrides) state.overrides = {};
+                        state.overrides[id] = {
+                            ...(state.overrides[id] || {}),
+                            status: editBookStatus.value,
+                            author: document.getElementById("editBookAuthor")?.value.trim() || "",
+                            rating: Number(document.getElementById("editBookRating")?.value) || 0,
+                            date_started: document.getElementById("editBookDateStarted")?.value || "",
+                            date_finished: document.getElementById("editBookDateFinished")?.value || "",
+                            review: document.getElementById("editBookReview")?.value.trim() || ""
+                        };
+                        await cfClient.saveState(state);
+                    } catch (_) {}
                 } else if (table === "movies") {
                     updateData.title = finalTitle;
                     updateData.year = Number(editMovieYear.value) || null;
@@ -826,6 +873,211 @@
         } catch (err) {
             console.error("Delete error:", err);
             alert("Error deleting record: " + (err.message || err));
+        }
+    }
+
+    /* ==========================================
+       READING LOG & GOALS CONTROLLER
+    ========================================== */
+    let readingLogInitialized = false;
+
+    async function loadReadingLogView() {
+        const goalYearInput = document.getElementById("readingGoalYear");
+        const goalTargetInput = document.getElementById("readingGoalTarget");
+        const goalMessage = document.getElementById("goalMessage");
+        const saveGoalBtn = document.getElementById("saveReadingGoalBtn");
+        const sessionForm = document.getElementById("readingSessionForm");
+        const sessionDate = document.getElementById("sessionDate");
+        const sessionBookSelect = document.getElementById("sessionBookSelect");
+        const sessionPages = document.getElementById("sessionPages");
+        const sessionMinutes = document.getElementById("sessionMinutes");
+        const sessionNotes = document.getElementById("sessionNotes");
+        const sessionMessage = document.getElementById("sessionMessage");
+        const sessionsList = document.getElementById("readingSessionsList");
+
+        const currentYear = new Date().getFullYear();
+        if (goalYearInput && !goalYearInput.value) {
+            goalYearInput.value = currentYear;
+        }
+        if (sessionDate && !sessionDate.value) {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, "0");
+            const d = String(now.getDate()).padStart(2, "0");
+            sessionDate.value = `${y}-${m}-${d}`;
+        }
+
+        // Load current state
+        let state = {};
+        try {
+            state = await cfClient.getState();
+        } catch (_) {}
+        if (!state) state = {};
+        if (!state.reading_goals) state.reading_goals = {};
+        if (!state.reading_activity) state.reading_activity = [];
+
+        // Check localStorage fallback
+        try {
+            const localGoals = JSON.parse(localStorage.getItem("books_reading_goals") || "{}");
+            if (Object.keys(localGoals).length > 0 && Object.keys(state.reading_goals).length === 0) {
+                state.reading_goals = localGoals;
+            }
+            const localActs = JSON.parse(localStorage.getItem("books_reading_activity") || "[]");
+            if (localActs.length > 0 && state.reading_activity.length === 0) {
+                state.reading_activity = localActs;
+            }
+        } catch (_) {}
+
+        // Populate goal target
+        const yr = goalYearInput ? Number(goalYearInput.value) || currentYear : currentYear;
+        if (goalTargetInput) {
+            goalTargetInput.value = (state.reading_goals[yr] && state.reading_goals[yr].target) ? state.reading_goals[yr].target : 12;
+        }
+
+        // Populate book dropdown
+        if (sessionBookSelect) {
+            let bookOptions = [];
+            try {
+                const books = await cfClient.getRecords("books");
+                if (Array.isArray(books)) {
+                    books.forEach(b => {
+                        const ov = (state.overrides && state.overrides[b.id]) || {};
+                        bookOptions.push({ id: b.id, title: ov.title || b.title });
+                    });
+                }
+            } catch (_) {}
+
+            const staticBooks = [
+                { id: "book-atomic-habits", title: "Atomic Habits" },
+                { id: "book-alchemist", title: "The Alchemist" },
+                { id: "book-48-laws", title: "The 48 Laws of Power" },
+                { id: "book-will-you-love-me", title: "Will you love me?" },
+                { id: "book-it-ends-with-us", title: "It Ends with us" },
+                { id: "book-strangers-again", title: "Can we be Strangers again?" }
+            ];
+            staticBooks.forEach(sb => {
+                if (!bookOptions.some(b => b.id === sb.id)) {
+                    const ov = (state.overrides && state.overrides[sb.id]) || {};
+                    bookOptions.push({ id: sb.id, title: ov.title || sb.title });
+                }
+            });
+
+            sessionBookSelect.innerHTML = `<option value="">-- Select a book --</option>` +
+                bookOptions.map(b => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.title)}</option>`).join("");
+        }
+
+        // Render sessions list
+        function renderSessions() {
+            if (!sessionsList) return;
+            const acts = state.reading_activity || [];
+            if (acts.length === 0) {
+                sessionsList.innerHTML = `<div style="padding: 14px; background: #FFFDF8; border: 2px dashed #2B2926; border-radius: 8px; text-align: center; color: #555;">No reading sessions logged yet. Log your first session above!</div>`;
+                return;
+            }
+
+            const sorted = [...acts].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+            sessionsList.innerHTML = sorted.map((act, idx) => {
+                const bookTitle = act.book_title || act.book_id || "Book";
+                let meta = [];
+                if (act.pages) meta.push(`${act.pages} pages`);
+                if (act.minutes) meta.push(`${act.minutes} mins`);
+                const metaStr = meta.length > 0 ? ` (${meta.join(", ")})` : "";
+                const noteStr = act.notes ? `<div style="font-size: 12px; color: #555; margin-top: 2px;"><em>${escapeHtml(act.notes)}</em></div>` : "";
+
+                return `
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: #FFFDF8; border: 2px solid #2B2926; border-radius: 8px; padding: 10px 14px; box-shadow: 2px 2px #2B2926;">
+                        <div>
+                            <strong>${escapeHtml(act.date)}</strong>: <span>${escapeHtml(bookTitle)}</span>${metaStr}
+                            ${noteStr}
+                        </div>
+                        <button type="button" class="del-session-btn" data-act-id="${escapeHtml(act.id || String(idx))}" style="background: #F4D35E; border: 1.5px solid #2B2926; border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 12px; font-weight: 700;">🗑 Remove</button>
+                    </div>
+                `;
+            }).join("");
+
+            sessionsList.querySelectorAll(".del-session-btn").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const actId = btn.dataset.actId;
+                    if (!confirm("Are you sure you want to delete this reading session?")) return;
+                    state.reading_activity = state.reading_activity.filter((a, i) => (a.id || String(i)) !== actId);
+                    try {
+                        localStorage.setItem("books_reading_activity", JSON.stringify(state.reading_activity));
+                        await cfClient.saveState(state);
+                    } catch (_) {}
+                    renderSessions();
+                });
+            });
+        }
+
+        renderSessions();
+
+        if (!readingLogInitialized) {
+            readingLogInitialized = true;
+
+            if (saveGoalBtn) {
+                saveGoalBtn.addEventListener("click", async () => {
+                    const y = Number(goalYearInput.value) || currentYear;
+                    const target = Number(goalTargetInput.value);
+                    if (!target || target <= 0) {
+                        setMessage(goalMessage, "Please enter a valid positive number for your goal.");
+                        return;
+                    }
+                    if (!state.reading_goals) state.reading_goals = {};
+                    state.reading_goals[y] = { target };
+                    try {
+                        localStorage.setItem("books_reading_goals", JSON.stringify(state.reading_goals));
+                        await cfClient.saveState(state);
+                        setMessage(goalMessage, `Goal for ${y} saved: ${target} books! 🎯`, true);
+                    } catch (e) {
+                        setMessage(goalMessage, "Failed to save goal.");
+                    }
+                });
+            }
+
+            if (sessionForm) {
+                sessionForm.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    const d = sessionDate.value;
+                    const bookId = sessionBookSelect.value;
+                    const pages = Number(sessionPages.value) || 0;
+                    const minutes = Number(sessionMinutes.value) || 0;
+                    const notes = sessionNotes.value.trim();
+
+                    if (!d || !bookId) {
+                        setMessage(sessionMessage, "Please select both a date and a book.");
+                        return;
+                    }
+
+                    const selectedOption = sessionBookSelect.options[sessionBookSelect.selectedIndex];
+                    const bookTitle = selectedOption ? selectedOption.text : bookId;
+
+                    if (!state.reading_activity) state.reading_activity = [];
+                    const newSession = {
+                        id: "act-" + Date.now(),
+                        date: d,
+                        book_id: bookId,
+                        book_title: bookTitle,
+                        pages,
+                        minutes,
+                        notes
+                    };
+
+                    state.reading_activity.push(newSession);
+
+                    try {
+                        localStorage.setItem("books_reading_activity", JSON.stringify(state.reading_activity));
+                        await cfClient.saveState(state);
+                        sessionPages.value = "";
+                        sessionMinutes.value = "";
+                        sessionNotes.value = "";
+                        setMessage(sessionMessage, "Reading session logged successfully! 📖✨", true);
+                        renderSessions();
+                    } catch (err) {
+                        setMessage(sessionMessage, "Failed to save session.");
+                    }
+                });
+            }
         }
     }
 

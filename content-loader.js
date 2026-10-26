@@ -235,7 +235,9 @@
                 </div>
             `).join("");
 
-            if (booksRow) {
+            if (typeof window.refreshBooksExperience === 'function') {
+                window.refreshBooksExperience();
+            } else if (booksRow) {
                 booksRow.innerHTML = html;
             } else if (dynamicTarget) {
                 dynamicTarget.innerHTML = html;
@@ -659,6 +661,9 @@
         }
         if (typeof window.refreshLetterboxdMovies === "function") {
             window.refreshLetterboxdMovies();
+        }
+        if (typeof window.refreshBooksExperience === "function") {
+            window.refreshBooksExperience();
         }
     }
 

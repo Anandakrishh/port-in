@@ -49,6 +49,7 @@
                     <button data-type="song">🎵 Song</button>
                     <button data-type="pinboard">📌 Pinboard</button>
                     <button data-type="hobby">🎮 Hobby</button>
+                    <button data-type="reading_log">📖 Reading Log</button>
                     <button data-type="old_records">📜 All records</button>
                 </div>
 
@@ -60,12 +61,22 @@
                         </div>
 
                         <div id="bookFields" class="admin-hidden">
+                            <label>Author</label>
+                            <input id="bookAuthor" placeholder="e.g. James Clear">
                             <label>Status</label>
                             <select id="bookStatus">
-                                <option value="finished">Finished</option>
-                                <option value="bought">Bought</option>
-                                <option value="need-to-buy">Need to Buy</option>
+                                <option value="finished">✓ Read (Finished)</option>
+                                <option value="currently-reading">📖 Currently Reading</option>
+                                <option value="want-to-read">🔖 Want to Read</option>
                             </select>
+                            <label>Rating (0 to 5)</label>
+                            <input id="bookRating" type="number" min="0" max="5" step="0.5" value="5">
+                            <label>Date Started</label>
+                            <input id="bookDateStarted" type="date">
+                            <label>Date Finished</label>
+                            <input id="bookDateFinished" type="date">
+                            <label>Review / Notes</label>
+                            <textarea id="bookReview" placeholder="Thoughts / key takeaways..."></textarea>
                         </div>
 
                         <div id="movieFields" class="admin-hidden">
@@ -101,6 +112,63 @@
                         <button type="submit">＋ Add</button>
                         <div id="formMessage" class="admin-message"></div>
                     </form>
+                </div>
+
+                <!-- READING LOG & CHALLENGE GOAL VIEW -->
+                <div id="readingLogView" class="admin-hidden">
+                    <div class="old-records-header">
+                        <h2>📖 Daily Reading Log & Challenge Goal</h2>
+                        <p class="small-note">Log daily reading sessions and set your annual reading challenge goal. Every verified activity powers your reading streaks and interactive calendar.</p>
+                    </div>
+
+                    <!-- Annual Goal Setting -->
+                    <div style="background: #FFFDF8; border: 2px solid #2B2926; border-radius: 14px; padding: 16px; margin-bottom: 20px; box-shadow: 4px 4px #2B2926;">
+                        <h3 style="font-size: 16px; margin: 0 0 10px; font-family: 'Space Grotesk', sans-serif;">🎯 Annual Reading Challenge Goal</h3>
+                        <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 120px;">
+                                <label style="display: block; font-size: 11px; margin-bottom: 4px;">Year</label>
+                                <input type="number" id="readingGoalYear" style="width: 100%; padding: 8px; border: 2px solid #2B2926; border-radius: 8px;">
+                            </div>
+                            <div style="flex: 1; min-width: 140px;">
+                                <label style="display: block; font-size: 11px; margin-bottom: 4px;">Target Books</label>
+                                <input type="number" id="readingGoalTarget" min="1" max="500" placeholder="e.g. 12" style="width: 100%; padding: 8px; border: 2px solid #2B2926; border-radius: 8px;">
+                            </div>
+                            <button type="button" id="saveReadingGoalBtn" style="padding: 10px 18px; background: #A8C9A1; border: 2px solid #2B2926; border-radius: 8px; font-weight: 700; cursor: pointer; box-shadow: 2px 2px #2B2926;">Save Goal</button>
+                        </div>
+                        <div id="goalMessage" class="admin-message" style="margin-top: 8px;"></div>
+                    </div>
+
+                    <!-- Log New Session -->
+                    <form id="readingSessionForm" class="admin-form" style="background: #FFFDF8; border: 2px solid #2B2926; border-radius: 14px; padding: 18px; box-shadow: 4px 4px #2B2926; margin-bottom: 24px;">
+                        <h3 style="font-size: 16px; margin: 0 0 14px; font-family: 'Space Grotesk', sans-serif;">➕ Log a Daily Reading Session</h3>
+                        
+                        <label>Activity Date</label>
+                        <input id="sessionDate" type="date" required>
+
+                        <label>Book</label>
+                        <select id="sessionBookSelect" required></select>
+
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 140px;">
+                                <label>Pages Read</label>
+                                <input id="sessionPages" type="number" min="1" placeholder="e.g. 30">
+                            </div>
+                            <div style="flex: 1; min-width: 140px;">
+                                <label>Minutes Spent</label>
+                                <input id="sessionMinutes" type="number" min="1" placeholder="e.g. 45">
+                            </div>
+                        </div>
+
+                        <label>Notes / Chapter (optional)</label>
+                        <input id="sessionNotes" type="text" placeholder="e.g. Chapter 4: Make It Easy">
+
+                        <button type="submit" id="logSessionBtn" style="margin-top: 8px;">＋ Save Reading Session</button>
+                        <div id="sessionMessage" class="admin-message"></div>
+                    </form>
+
+                    <!-- Session History -->
+                    <h3 style="font-size: 16px; margin: 18px 0 10px; font-family: 'Space Grotesk', sans-serif;">📋 Logged Reading Sessions</h3>
+                    <div id="readingSessionsList" style="display: flex; flex-direction: column; gap: 8px;"></div>
                 </div>
 
                 <!-- OLD RECORDS TAB VIEW -->
@@ -163,12 +231,22 @@
 
                     <!-- Books specific -->
                     <div id="editBookFields" class="admin-hidden">
+                        <label>Author</label>
+                        <input id="editBookAuthor" placeholder="e.g. James Clear">
                         <label>Status</label>
                         <select id="editBookStatus">
-                            <option value="finished">Finished</option>
-                            <option value="bought">Bought</option>
-                            <option value="need-to-buy">Need to Buy</option>
+                            <option value="finished">✓ Read (Finished)</option>
+                            <option value="currently-reading">📖 Currently Reading</option>
+                            <option value="want-to-read">🔖 Want to Read</option>
                         </select>
+                        <label>Rating (0 to 5)</label>
+                        <input id="editBookRating" type="number" min="0" max="5" step="0.5">
+                        <label>Date Started</label>
+                        <input id="editBookDateStarted" type="date">
+                        <label>Date Finished</label>
+                        <input id="editBookDateFinished" type="date">
+                        <label>Review / Notes</label>
+                        <textarea id="editBookReview" placeholder="Review..."></textarea>
                     </div>
 
                     <!-- Movies specific -->

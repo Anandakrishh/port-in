@@ -10,7 +10,7 @@
 
     <link rel="stylesheet" href="style.css">
 
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
 </head>
 
@@ -44,139 +44,126 @@
 
 
         <!-- ==========================================
-             BOOKS
+             FEATURE 5: READING GOAL & CHALLENGE WIDGET
+        =========================================== -->
+        <div id="bookChallengeWidget" class="book-challenge-widget"></div>
+
+
+        <!-- ==========================================
+             FEATURE 1: READING STREAK DASHBOARD
+        =========================================== -->
+        <div id="bookStreakDashboard" class="book-streak-dashboard"></div>
+
+
+        <!-- ==========================================
+             FEATURES 2 & 3: READING ANALYTICS
+             (INTERACTIVE CALENDAR & MONTHLY BREAKDOWN)
+        =========================================== -->
+        <section class="book-analytics-grid">
+            <!-- Feature 2: Interactive Calendar -->
+            <div id="bookCalendarWidget" class="book-calendar-widget"></div>
+
+            <!-- Feature 3: Monthly Reading Activity -->
+            <div id="bookMonthlyWidget" class="book-monthly-widget"></div>
+        </section>
+
+
+        <!-- ==========================================
+             FEATURE 4: SHELVES & SEARCH BAR
+        =========================================== -->
+        <div class="book-browse-bar">
+            <div id="bookShelfTabs" class="book-shelf-tabs"></div>
+            <div class="book-search-wrap">
+                <input type="text" id="bookSearchInput" placeholder="🔍 Search title or author..." aria-label="Search books">
+            </div>
+        </div>
+
+
+        <!-- ==========================================
+             BOOKS SHELVES COLLECTION
         =========================================== -->
 
         <section class="books-section">
 
             <div class="books-row">
 
+                <!-- Fallback Initial Books (hydrated and enhanced by books.js) -->
 
-                <!-- ==================================
-                     BOOK 1
-                =================================== -->
-
+                <!-- BOOK 1 -->
                 <div class="book" id="book-atomic-habits" data-record-id="book-atomic-habits">
-
-                    <img src="assets/books/atomic-habits.jpg"
-                         alt="Atomic Habits">
-
+                    <div class="book-cover-wrap">
+                        <img src="assets/books/atomic-habits.jpg" alt="Atomic Habits">
+                        <div class="book-badge-overlay"><span class="book-shelf-tag tag-read">✓ Read</span></div>
+                    </div>
                     <div class="book-title-row">
-
                         <h3>Atomic Habits</h3>
-
+                        <div class="book-author">James Clear</div>
                     </div>
-
-                    <!-- <p>2024</p> -->
-
                 </div>
 
-
-                <!-- ==================================
-                     BOOK 2
-                =================================== -->
-
+                <!-- BOOK 2 -->
                 <div class="book" id="book-alchemist" data-record-id="book-alchemist">
-
-                    <img src="assets/books/alchemist.jpg"
-                         alt="The Alchemist">
-
+                    <div class="book-cover-wrap">
+                        <img src="assets/books/alchemist.jpg" alt="The Alchemist">
+                        <div class="book-badge-overlay"><span class="book-shelf-tag tag-read">✓ Read</span></div>
+                    </div>
                     <div class="book-title-row">
-
                         <h3>The Alchemist</h3>
-
+                        <div class="book-author">Paulo Coelho</div>
                     </div>
-
-                    <!-- <p>2024</p> -->
-
                 </div>
 
-
-                <!-- ==================================
-                     BOOK 3
-                =================================== -->
-
+                <!-- BOOK 3 -->
                 <div class="book" id="book-48-laws" data-record-id="book-48-laws">
-
-                    <img src="assets/books/The 48 Laws of Power.jpg"
-                         alt="The 48 Laws of Power">
-
+                    <div class="book-cover-wrap">
+                        <img src="assets/books/The 48 Laws of Power.jpg" alt="The 48 Laws of Power">
+                        <div class="book-badge-overlay"><span class="book-shelf-tag tag-read">✓ Read</span></div>
+                    </div>
                     <div class="book-title-row">
-
                         <h3>The 48 Laws of Power</h3>
-
+                        <div class="book-author">Robert Greene</div>
                     </div>
-
-                    <!-- <p>2024</p> -->
-
                 </div>
 
-
-                <!-- ==================================
-                     BOOK 4
-                =================================== -->
-
+                <!-- BOOK 4 -->
                 <div class="book" id="book-will-you-love-me" data-record-id="book-will-you-love-me">
-
-                    <img src="assets/books/1.jpg"
-                         alt="Book 4">
-
+                    <div class="book-cover-wrap">
+                        <img src="assets/books/1.jpg" alt="Will you love me?">
+                        <div class="book-badge-overlay"><span class="book-shelf-tag tag-read">✓ Read</span></div>
+                    </div>
                     <div class="book-title-row">
-
                         <h3>Will you love me?</h3>
-
+                        <div class="book-author">Ravinder Singh</div>
                     </div>
-
-                    <!-- <p>2024</p> -->
-
                 </div>
 
-
-                <!-- ==================================
-                     BOOK 5
-                =================================== -->
-
+                <!-- BOOK 5 -->
                 <div class="book" id="book-it-ends-with-us" data-record-id="book-it-ends-with-us">
-
-                    <img src="assets/books/It Ends with Us_ A Novel.jpg"
-                         alt="Book 5">
-
+                    <div class="book-cover-wrap">
+                        <img src="assets/books/It Ends with Us_ A Novel.jpg" alt="It Ends with us">
+                        <div class="book-badge-overlay"><span class="book-shelf-tag tag-reading">📖 Reading</span></div>
+                    </div>
                     <div class="book-title-row">
-
                         <h3>It Ends with us</h3>
-
+                        <div class="book-author">Colleen Hoover</div>
                     </div>
-
-                    <!-- <p>2024</p> -->
-
                 </div>
 
-
-                <!-- ==================================
-                     BOOK 6
-                =================================== -->
-
+                <!-- BOOK 6 -->
                 <div class="book" id="book-strangers-again" data-record-id="book-strangers-again">
-
-                    <img src="assets/books/2.jpg"
-                         alt="Book 6">
-
-                    <div class="book-title-row">
-
-                        <h3>Can we be Strangers again?</h3>
-
+                    <div class="book-cover-wrap">
+                        <img src="assets/books/2.jpg" alt="Can we be Strangers again?">
+                        <div class="book-badge-overlay"><span class="book-shelf-tag tag-want">🔖 Want to Read</span></div>
                     </div>
-
-                    <!-- <p>2024</p> -->
-
+                    <div class="book-title-row">
+                        <h3>Can we be Strangers again?</h3>
+                        <div class="book-author">Shravya Bhinder</div>
+                    </div>
                 </div>
 
-                <!-- Content added from the private admin dashboard -->
-                <div id="dynamic-books" class="dynamic-books"></div>
+            </div>
 
-                </div>
-
-            </section>
+        </section>
 
 
         <!-- ==========================================
@@ -206,12 +193,66 @@
         </section>
 
 
+    </div>
+
+
+    <!-- ==========================================
+         BOOK DETAIL & READING HISTORY MODAL
+    =========================================== -->
+    <div class="book-detail-modal" id="bookDetailModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalBookTitle">
+        <div class="book-detail-backdrop" id="bookModalBackdrop"></div>
+        <div class="book-detail-dialog">
+            <button type="button" class="book-detail-close" id="bookModalClose" aria-label="Close modal">×</button>
+            <div class="book-detail-layout">
+                <div class="book-detail-cover-wrap">
+                    <img id="modalBookCover" src="" alt="Book Cover">
+                </div>
+                <div class="book-detail-content">
+                    <div class="book-detail-header">
+                        <h2 id="modalBookTitle" class="book-detail-title">Title</h2>
+                        <div id="modalBookAuthor" class="book-detail-author">Author</div>
+                    </div>
+                    <div class="book-detail-meta-row">
+                        <span id="modalBookRating" class="book-detail-rating">★★★★★ (5/5)</span>
+                        <span id="modalBookDates" class="book-detail-dates"></span>
+                    </div>
+                    <div class="book-detail-divider"></div>
+
+                    <!-- Quick Status Selector -->
+                    <div class="book-detail-status-row">
+                        <label for="modalBookStatusSelect">Reading Status:</label>
+                        <select id="modalBookStatusSelect" class="book-status-select">
+                            <option value="read">✓ Read (Completed)</option>
+                            <option value="currently-reading">📖 Currently Reading</option>
+                            <option value="want-to-read">🔖 Want to Read</option>
+                        </select>
+                        <button type="button" id="modalUpdateStatusBtn" class="book-status-save-btn">Update Status</button>
+                    </div>
+
+                    <div class="book-detail-divider"></div>
+
+                    <!-- Review / Notes -->
+                    <div class="book-detail-notes-section">
+                        <span class="book-section-label">NOTES & REVIEW</span>
+                        <p id="modalBookNotes" class="book-detail-notes">No notes logged yet.</p>
+                    </div>
+
+                    <!-- Reading History Log for this title -->
+                    <div class="book-detail-timeline-section">
+                        <span class="book-section-label">READING LOGS</span>
+                        <div id="modalBookTimeline" class="book-timeline-list"></div>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <script src="cloudflare-config.js?v=2"></script>
-        <script src="cloudflare-client.js?v=2"></script>
-        <script src="content-loader.js?v=2"></script>
 
-    </body>
+    <script src="cloudflare-config.js?v=2"></script>
+    <script src="cloudflare-client.js?v=2"></script>
+    <script src="content-loader.js?v=2"></script>
+    <script src="books.js?v=1"></script>
 
-    </html>
+</body>
+
+</html>
