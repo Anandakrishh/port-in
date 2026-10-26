@@ -8,9 +8,242 @@
 
     <title>Books</title>
 
-    <link rel="stylesheet" href="style.css">
+    <!-- Global Base Stylesheet with Cache Buster -->
+    <link rel="stylesheet" href="style.css?v=20261026-v4">
+    <!-- Dedicated Books Stylesheet with Cache Buster -->
+    <link rel="stylesheet" href="books.css?v=20261026-v4">
 
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Critical Theme Guard: Guarantees Layout & Styling Even If Cache or Network Delays Stylesheets -->
+    <style>
+        body {
+            background-color: #F7F2E9 !important;
+            color: #2B2926;
+            font-family: 'Space Grotesk', -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .books-container {
+            max-width: 960px !important;
+            margin: 0 auto !important;
+            padding: 36px 20px 60px !important;
+            box-sizing: border-box !important;
+        }
+
+        .page-header {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 20px !important;
+            margin-bottom: 32px !important;
+        }
+
+        .back {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            text-decoration: none !important;
+            color: #2B2926 !important;
+            background: #D9D3EA !important;
+            padding: 10px 18px !important;
+            border: 3px solid #2B2926 !important;
+            border-radius: 14px !important;
+            font-family: 'Space Grotesk', sans-serif !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            box-shadow: 4px 4px #2B2926 !important;
+            transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+        }
+
+        .back:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 6px 6px #2B2926 !important;
+        }
+
+        .page-title h1 {
+            font-family: 'Space Grotesk', sans-serif !important;
+            font-size: 42px !important;
+            font-weight: 700 !important;
+            color: #2B2926 !important;
+            margin: 0 0 8px !important;
+            line-height: 1.15 !important;
+        }
+
+        .page-title p {
+            font-family: 'Inter', sans-serif !important;
+            font-size: 16px !important;
+            color: #55514B !important;
+            margin: 0 !important;
+        }
+
+        /* Reading Challenge Card */
+        .challenge-card {
+            background: #FFFDF8 !important;
+            border: 3px solid #2B2926 !important;
+            border-radius: 20px !important;
+            padding: 22px 26px !important;
+            box-shadow: 6px 6px #2B2926 !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Streak Dashboard - 4 Equal Columns */
+        .book-streak-dashboard {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 16px !important;
+            margin: 0 0 32px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .streak-card {
+            background: #FFFDF8 !important;
+            border: 3px solid #2B2926 !important;
+            border-radius: 16px !important;
+            padding: 18px 16px !important;
+            box-shadow: 5px 5px #2B2926 !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Analytics Grid - Calendar & Monthly */
+        .book-analytics-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 22px !important;
+            margin-bottom: 36px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .book-calendar-widget,
+        .book-monthly-widget {
+            background: #FFFDF8 !important;
+            border: 3px solid #2B2926 !important;
+            border-radius: 20px !important;
+            padding: 22px !important;
+            box-shadow: 6px 6px #2B2926 !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Calendar 7-Column Grid */
+        .cal-weekdays {
+            display: grid !important;
+            grid-template-columns: repeat(7, 1fr) !important;
+            gap: 5px !important;
+            margin-bottom: 8px !important;
+            width: 100% !important;
+        }
+
+        .cal-days {
+            display: grid !important;
+            grid-template-columns: repeat(7, 1fr) !important;
+            gap: 6px !important;
+            width: 100% !important;
+        }
+
+        .cal-day-cell {
+            aspect-ratio: 1 !important;
+            min-height: 40px !important;
+            border: 2px solid #2B2926 !important;
+            border-radius: 10px !important;
+            background: #FFFDF8 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 4px 2px !important;
+            font-size: 11px !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Books 3-Column Grid */
+        .books-row {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 32px 24px !important;
+            width: 100% !important;
+        }
+
+        @media (max-width: 860px) {
+            .book-streak-dashboard {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            .book-analytics-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .books-row {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+
+        @media (max-width: 580px) {
+            .books-container {
+                padding: 20px 12px 48px !important;
+            }
+            .page-title h1 {
+                font-size: 32px !important;
+            }
+            .challenge-card {
+                padding: 16px 14px !important;
+            }
+            .challenge-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+            }
+            .challenge-meta-row {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 4px !important;
+            }
+            .streak-card {
+                padding: 14px 12px !important;
+            }
+            .book-calendar-widget,
+            .book-monthly-widget {
+                padding: 16px 12px !important;
+            }
+            .book-calendar-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            .cal-weekdays {
+                gap: 3px !important;
+            }
+            .cal-weekday {
+                font-size: 9px !important;
+            }
+            .cal-days {
+                gap: 3px !important;
+            }
+            .cal-day-cell {
+                min-height: 0 !important;
+                padding: 2px 1px !important;
+                font-size: 10px !important;
+                border-radius: 6px !important;
+            }
+        }
+
+        @media (max-width: 375px) {
+            .books-container {
+                padding: 16px 10px 40px !important;
+            }
+            .cal-days {
+                gap: 2px !important;
+            }
+            .cal-day-cell {
+                min-height: 0 !important;
+                font-size: 9px !important;
+                border-radius: 5px !important;
+            }
+        }
+    </style>
 
 </head>
 
@@ -46,13 +279,58 @@
         <!-- ==========================================
              FEATURE 5: READING GOAL & CHALLENGE WIDGET
         =========================================== -->
-        <div id="bookChallengeWidget" class="book-challenge-widget"></div>
+        <div id="bookChallengeWidget" class="book-challenge-widget">
+            <div class="challenge-card">
+                <div class="challenge-header">
+                    <div class="challenge-title-group">
+                        <span class="challenge-badge">🎯 2026 Reading Challenge</span>
+                        <h3 class="challenge-heading">
+                            <strong>4</strong> of <strong>12</strong> books completed
+                        </h3>
+                    </div>
+                    <button type="button" class="challenge-edit-btn" id="editGoalBtn" aria-label="Edit reading goal">
+                        ⚙️ Goal (12)
+                    </button>
+                </div>
+
+                <div class="challenge-progress-bar">
+                    <div class="challenge-progress-fill" style="width: 33%;"></div>
+                </div>
+
+                <div class="challenge-meta-row">
+                    <span class="challenge-pct">33% completed</span>
+                    <span class="challenge-rem">8 books to go</span>
+                    <span class="challenge-days">66 days left in 2026</span>
+                </div>
+            </div>
+        </div>
 
 
         <!-- ==========================================
              FEATURE 1: READING STREAK DASHBOARD
         =========================================== -->
-        <div id="bookStreakDashboard" class="book-streak-dashboard"></div>
+        <div id="bookStreakDashboard" class="book-streak-dashboard">
+            <div class="streak-card highlight-streak">
+                <div class="streak-icon-pill">🔥 Current</div>
+                <div class="streak-big-val">5 <span class="streak-unit">days</span></div>
+                <div class="streak-sub-label">Current Reading Streak</div>
+            </div>
+            <div class="streak-card">
+                <div class="streak-icon-pill">⚡ Best (2026)</div>
+                <div class="streak-big-val">12 <span class="streak-unit">days</span></div>
+                <div class="streak-sub-label">Longest Streak this Year</div>
+            </div>
+            <div class="streak-card">
+                <div class="streak-icon-pill">📅 Total Days</div>
+                <div class="streak-big-val">42 <span class="streak-unit">days</span></div>
+                <div class="streak-sub-label">Days Read in 2026</div>
+            </div>
+            <div class="streak-card">
+                <div class="streak-icon-pill">📚 Finished</div>
+                <div class="streak-big-val">4 <span class="streak-unit">books</span></div>
+                <div class="streak-sub-label">Books Read in 2026</div>
+            </div>
+        </div>
 
 
         <!-- ==========================================
@@ -61,7 +339,79 @@
         =========================================== -->
         <section class="book-analytics-grid">
             <!-- Feature 2: Interactive Calendar -->
-            <div id="bookCalendarWidget" class="book-calendar-widget"></div>
+            <div id="bookCalendarWidget" class="book-calendar-widget">
+                <div class="book-calendar-header">
+                    <div class="cal-title-group">
+                        <h3 class="cal-month-title">October 2026</h3>
+                        <span class="cal-subtitle">Daily reading activity</span>
+                    </div>
+                    <div class="cal-nav-group">
+                        <button type="button" class="cal-nav-btn" id="calPrevMonth" aria-label="Previous month">‹</button>
+                        <button type="button" class="cal-nav-today-btn" id="calTodayBtn">Today</button>
+                        <button type="button" class="cal-nav-btn" id="calNextMonth" aria-label="Next month">›</button>
+                    </div>
+                </div>
+
+                <div class="book-calendar-grid">
+                    <div class="cal-weekdays">
+                        <div class="cal-weekday">Mon</div>
+                        <div class="cal-weekday">Tue</div>
+                        <div class="cal-weekday">Wed</div>
+                        <div class="cal-weekday">Thu</div>
+                        <div class="cal-weekday">Fri</div>
+                        <div class="cal-weekday">Sat</div>
+                        <div class="cal-weekday">Sun</div>
+                    </div>
+                    <div class="cal-days">
+                        <!-- Initial placeholder days, hydrated by books.js -->
+                        <div class="cal-day-cell is-empty"></div>
+                        <div class="cal-day-cell is-empty"></div>
+                        <div class="cal-day-cell is-empty"></div>
+                        <div class="cal-day-cell" data-date="2026-10-01"><span class="cal-day-num">1</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-02"><span class="cal-day-num">2</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-03"><span class="cal-day-num">3</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-04"><span class="cal-day-num">4</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-05"><span class="cal-day-num">5</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-06"><span class="cal-day-num">6</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-07"><span class="cal-day-num">7</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-08"><span class="cal-day-num">8</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-09"><span class="cal-day-num">9</span></div>
+                        <div class="cal-day-cell has-activity" data-date="2026-10-10"><span class="cal-day-num">10</span><span class="cal-reading-dot"></span></div>
+                        <div class="cal-day-cell" data-date="2026-10-11"><span class="cal-day-num">11</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-12"><span class="cal-day-num">12</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-13"><span class="cal-day-num">13</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-14"><span class="cal-day-num">14</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-15"><span class="cal-day-num">15</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-16"><span class="cal-day-num">16</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-17"><span class="cal-day-num">17</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-18"><span class="cal-day-num">18</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-19"><span class="cal-day-num">19</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-20"><span class="cal-day-num">20</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-21"><span class="cal-day-num">21</span></div>
+                        <div class="cal-day-cell has-activity" data-date="2026-10-22"><span class="cal-day-num">22</span><span class="cal-reading-dot"></span></div>
+                        <div class="cal-day-cell has-activity" data-date="2026-10-23"><span class="cal-day-num">23</span><span class="cal-reading-dot"></span></div>
+                        <div class="cal-day-cell has-activity" data-date="2026-10-24"><span class="cal-day-num">24</span><span class="cal-reading-dot"></span></div>
+                        <div class="cal-day-cell has-activity" data-date="2026-10-25"><span class="cal-day-num">25</span><span class="cal-reading-dot"></span></div>
+                        <div class="cal-day-cell has-activity is-today" data-date="2026-10-26"><span class="cal-day-num">26</span><span class="cal-reading-dot"></span></div>
+                        <div class="cal-day-cell" data-date="2026-10-27"><span class="cal-day-num">27</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-28"><span class="cal-day-num">28</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-29"><span class="cal-day-num">29</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-30"><span class="cal-day-num">30</span></div>
+                        <div class="cal-day-cell" data-date="2026-10-31"><span class="cal-day-num">31</span></div>
+                    </div>
+                </div>
+
+                <div class="cal-footer-row">
+                    <div class="cal-legend">
+                        <span class="legend-item"><span class="legend-box has-activity"></span> Active day</span>
+                        <span class="legend-item"><span class="legend-box is-today"></span> Today</span>
+                        <span class="legend-item"><span class="legend-dot"></span> Logged session</span>
+                    </div>
+                    <div id="calSelectedInfo" class="cal-selected-info">
+                        <span class="cal-hint-text">💡 Tap any active date to view reading notes</span>
+                    </div>
+                </div>
+            </div>
 
             <!-- Feature 3: Monthly Reading Activity -->
             <div id="bookMonthlyWidget" class="book-monthly-widget"></div>
@@ -72,7 +422,20 @@
              FEATURE 4: SHELVES & SEARCH BAR
         =========================================== -->
         <div class="book-browse-bar">
-            <div id="bookShelfTabs" class="book-shelf-tabs"></div>
+            <div id="bookShelfTabs" class="book-shelf-tabs">
+                <button type="button" class="shelf-tab active" data-shelf="all">
+                    All Books <span class="shelf-pill">6</span>
+                </button>
+                <button type="button" class="shelf-tab" data-shelf="read">
+                    ✓ Read <span class="shelf-pill">4</span>
+                </button>
+                <button type="button" class="shelf-tab" data-shelf="currently-reading">
+                    📖 Reading <span class="shelf-pill">1</span>
+                </button>
+                <button type="button" class="shelf-tab" data-shelf="want-to-read">
+                    🔖 Want to Read <span class="shelf-pill">1</span>
+                </button>
+            </div>
             <div class="book-search-wrap">
                 <input type="text" id="bookSearchInput" placeholder="🔍 Search title or author..." aria-label="Search books">
             </div>
@@ -87,8 +450,6 @@
 
             <div class="books-row">
 
-                <!-- Fallback Initial Books (hydrated and enhanced by books.js) -->
-
                 <!-- BOOK 1 -->
                 <div class="book" id="book-atomic-habits" data-record-id="book-atomic-habits">
                     <div class="book-cover-wrap">
@@ -98,6 +459,7 @@
                     <div class="book-title-row">
                         <h3>Atomic Habits</h3>
                         <div class="book-author">James Clear</div>
+                        <div class="book-stars">★ 5</div>
                     </div>
                 </div>
 
@@ -110,6 +472,7 @@
                     <div class="book-title-row">
                         <h3>The Alchemist</h3>
                         <div class="book-author">Paulo Coelho</div>
+                        <div class="book-stars">★ 4.5</div>
                     </div>
                 </div>
 
@@ -122,6 +485,7 @@
                     <div class="book-title-row">
                         <h3>The 48 Laws of Power</h3>
                         <div class="book-author">Robert Greene</div>
+                        <div class="book-stars">★ 4.5</div>
                     </div>
                 </div>
 
@@ -134,6 +498,7 @@
                     <div class="book-title-row">
                         <h3>Will you love me?</h3>
                         <div class="book-author">Ravinder Singh</div>
+                        <div class="book-stars">★ 4</div>
                     </div>
                 </div>
 
@@ -146,6 +511,7 @@
                     <div class="book-title-row">
                         <h3>It Ends with us</h3>
                         <div class="book-author">Colleen Hoover</div>
+                        <div class="book-stars">★ 4</div>
                     </div>
                 </div>
 
@@ -233,7 +599,7 @@
 
                     <!-- Review / Notes -->
                     <div class="book-detail-notes-section">
-                        <span class="book-section-label">NOTES & REVIEW</span>
+                        <span class="book-section-label">NOTES &amp; REVIEW</span>
                         <p id="modalBookNotes" class="book-detail-notes">No notes logged yet.</p>
                     </div>
 
@@ -248,10 +614,10 @@
     </div>
 
 
-    <script src="cloudflare-config.js?v=2"></script>
-    <script src="cloudflare-client.js?v=2"></script>
-    <script src="content-loader.js?v=2"></script>
-    <script src="books.js?v=1"></script>
+    <script src="cloudflare-config.js?v=20261026-v4"></script>
+    <script src="cloudflare-client.js?v=20261026-v4"></script>
+    <script src="content-loader.js?v=20261026-v4"></script>
+    <script src="books.js?v=20261026-v4"></script>
 
 </body>
 

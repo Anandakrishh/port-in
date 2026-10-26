@@ -878,25 +878,7 @@
        INITIALIZATION & DATA LOADING
        ============================================================== */
 
-    async function initBooks() {
-        // 1. Load from Cloudflare API & site_state
-        let cloudBooks = [];
-        let cloudState = { overrides: {}, reading_activity: [], reading_goals: {} };
-
-        try {
-            if (window.cfClient) {
-                const [booksRes, stateRes] = await Promise.all([
-                    window.cfClient.getRecords("books").catch(() => []),
-                    window.cfClient.getState().catch(() => ({}))
-                ]);
-                cloudBooks = Array.isArray(booksRes) ? booksRes : [];
-                cloudState = stateRes || {};
-            }
-        } catch (e) {
-            console.warn("Could not fetch remote books:", e);
-        }
-
-        // Fallback local storage
+    function populateStateFromData(cloudBooks = [], cloudState = {}) {
         let localOverrides = {};
         let localActivities = [];
         let localGoals = {};
@@ -914,10 +896,8 @@
             ? cloudState.reading_goals
             : localGoals;
 
-        // Build composite book list
         const booksMap = new Map();
 
-        // Include cloud books
         cloudBooks.forEach(b => {
             if (!b || !b.id) return;
             const ov = state.overrides[b.id] || {};
@@ -936,7 +916,6 @@
             });
         });
 
-        // Ensure default catalog items are included if not in cloud
         Object.keys(CATALOG_DEFAULTS).forEach(id => {
             if (!booksMap.has(id)) {
                 const def = CATALOG_DEFAULTS[id];
@@ -968,23 +947,50 @@
         });
 
         state.books = Array.from(booksMap.values());
+    }
 
-        // Setup search bar listener
-        const searchInput = document.getElementById("bookSearchInput");
-        if (searchInput) {
-            searchInput.addEventListener("input", (e) => {
-                state.searchQuery = e.target.value.trim();
-                renderShelves();
-            });
-        }
+    let searchInitialized = false;
 
-        // Render all UI components
+    function renderAll() {
         renderReadingGoal();
         renderStreakDashboard();
         renderCalendar();
         renderMonthlyActivity();
         renderShelves();
         setupBookDetailModal();
+
+        if (!searchInitialized) {
+            searchInitialized = true;
+            const searchInput = document.getElementById("bookSearchInput");
+            if (searchInput) {
+                searchInput.addEventListener("input", (e) => {
+                    state.searchQuery = e.target.value.trim();
+                    renderShelves();
+                });
+            }
+        }
+    }
+
+    async function initBooks() {
+        // 1. Instant local render (0ms delay)
+        populateStateFromData([], {});
+        renderAll();
+
+        // 2. Asynchronous remote sync
+        try {
+            if (window.cfClient) {
+                const [booksRes, stateRes] = await Promise.all([
+                    window.cfClient.getRecords("books").catch(() => []),
+                    window.cfClient.getState().catch(() => ({}))
+                ]);
+                const cloudBooks = Array.isArray(booksRes) ? booksRes : [];
+                const cloudState = stateRes || {};
+                populateStateFromData(cloudBooks, cloudState);
+                renderAll();
+            }
+        } catch (e) {
+            console.warn("Could not sync remote books:", e);
+        }
     }
 
     // Expose hook so admin or other modules can refresh
