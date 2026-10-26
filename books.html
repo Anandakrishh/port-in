@@ -110,6 +110,55 @@
             box-sizing: border-box !important;
         }
 
+        /* Live Session Tracker Card */
+        .live-tracker-card {
+            background: #FFFDF8 !important;
+            border: 3px solid #2B2926 !important;
+            border-radius: 20px !important;
+            padding: 22px 26px !important;
+            box-shadow: 6px 6px #2B2926 !important;
+            box-sizing: border-box !important;
+            margin-bottom: 32px !important;
+        }
+
+        /* Reading Analytics Section */
+        .analytics-card {
+            background: #FFFDF8 !important;
+            border: 3px solid #2B2926 !important;
+            border-radius: 20px !important;
+            padding: 24px 26px !important;
+            box-shadow: 6px 6px #2B2926 !important;
+            box-sizing: border-box !important;
+            margin-bottom: 36px !important;
+        }
+
+        .analytics-hero-row {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 16px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .analytics-totals-strip {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-around !important;
+            background: #FFFDF8 !important;
+            border: 2px solid #2B2926 !important;
+            border-radius: 14px !important;
+            padding: 14px 18px !important;
+            margin-bottom: 22px !important;
+            box-shadow: 4px 4px #2B2926 !important;
+            flex-wrap: wrap !important;
+            gap: 12px !important;
+        }
+
+        .analytics-pace-grid {
+            display: grid !important;
+            grid-template-columns: repeat(6, 1fr) !important;
+            gap: 12px !important;
+        }
+
         /* Analytics Grid - Calendar & Monthly */
         .book-analytics-grid {
             display: grid !important;
@@ -173,6 +222,10 @@
             .book-streak-dashboard {
                 grid-template-columns: repeat(2, 1fr) !important;
             }
+            .analytics-pace-grid {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 10px !important;
+            }
             .book-analytics-grid {
                 grid-template-columns: 1fr !important;
             }
@@ -203,6 +256,60 @@
             }
             .streak-card {
                 padding: 14px 12px !important;
+            }
+            .analytics-card {
+                padding: 18px 14px !important;
+            }
+            .analytics-top-bar {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+            }
+            .analytics-range-tabs {
+                width: 100% !important;
+                justify-content: space-around !important;
+                padding: 4px 6px !important;
+            }
+            .range-tab {
+                padding: 4px 6px !important;
+                font-size: 11px !important;
+            }
+            .analytics-hero-row {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            .analytics-totals-strip {
+                padding: 12px 10px !important;
+                gap: 8px !important;
+            }
+            .total-item {
+                flex: 1 1 40% !important;
+            }
+            .total-divider {
+                display: none !important;
+            }
+            .analytics-pace-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
+            .live-tracker-card {
+                padding: 16px 14px !important;
+            }
+            .tracker-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+            }
+            .tracker-timer-display {
+                font-size: 26px !important;
+                align-self: flex-start !important;
+            }
+            .tracker-controls-row {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            .tracker-page-inputs {
+                width: 100% !important;
             }
             .book-calendar-widget,
             .book-monthly-widget {
@@ -331,6 +438,18 @@
                 <div class="streak-sub-label">Books Read in 2026</div>
             </div>
         </div>
+
+
+        <!-- ==========================================
+             LIVE READING SESSION TRACKER & TIMER
+        =========================================== -->
+        <div id="bookLiveTrackerWidget" class="book-live-tracker-widget"></div>
+
+
+        <!-- ==========================================
+             READING ANALYTICS & INTERACTIVE GRAPH
+        =========================================== -->
+        <div id="bookAnalyticsSection" class="book-analytics-section"></div>
 
 
         <!-- ==========================================

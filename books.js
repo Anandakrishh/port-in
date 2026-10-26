@@ -1,11 +1,15 @@
 /**
  * ==============================================================
  * Books Section Architecture & Reading Experience Engine
+ * - Reading Stats & Interactive SVG Graph (Activity & Time Modes)
+ * - Time Range Filters: Weekly, Monthly, Yearly, All Time
+ * - Deep Reading Analytics: Pace, Speed, Best Day, Longest/Shortest
+ * - Live Reading Session Stopwatch & Tracker
  * - Reading Streak Dashboard (Current, Best, Total Days, Books Read)
- * - Interactive Reading Calendar (Month view, active cells, date inspector)
- * - Monthly Activity Visualization (Jan - Dec horizontal progress bars)
- * - Shelves & Reading Status Filter (All, Read, Currently Reading, Want to Read)
- * - Reading Goals & Challenge Tracker (Progress, remaining days/books, editable target)
+ * - Interactive Reading Calendar (7-column grid, active cells, inspector)
+ * - Monthly Activity Visualization (Jan - Dec horizontal progress tracks)
+ * - Shelves & Reading Status Filter (All, Read, Reading, Want to Read)
+ * - Reading Goals & Challenge Tracker (Progress, remaining days/books)
  * - Book Detail & Reading History Modal
  * ==============================================================
  */
@@ -21,10 +25,20 @@
         activeShelf: "all",
         searchQuery: "",
         selectedDate: null,
+        analyticsRange: "yearly", // 'weekly' | 'monthly' | 'yearly' | 'all'
+        analyticsMode: "activity", // 'activity' | 'time'
         books: [],
         activities: [],
         goals: {},
-        overrides: {}
+        overrides: {},
+        liveSession: {
+            active: false,
+            paused: false,
+            startTime: null,
+            elapsedSeconds: 0,
+            intervalId: null,
+            bookId: ""
+        }
     };
 
     // Month & Day constants
@@ -35,7 +49,7 @@
     const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-    // Default book metadata enhancements (authors, default statuses for existing catalog)
+    // Default book metadata enhancements
     const CATALOG_DEFAULTS = {
         "book-atomic-habits": {
             author: "James Clear",
@@ -101,6 +115,15 @@
         return `${y}-${m}-${day}`;
     }
 
+    // Helper: Format Duration (minutes to "Xh Ym" or "Xm")
+    function formatDuration(totalMins = 0) {
+        const mins = Math.max(0, Math.round(totalMins));
+        if (mins < 60) return `${mins}m`;
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        return m > 0 ? `${h}h ${m}m` : `${h}h`;
+    }
+
     // Helper: Normalize reading status
     function normalizeStatus(status = "") {
         const s = String(status).trim().toLowerCase();
@@ -110,25 +133,20 @@
         return "read";
     }
 
-    // Helper: Status label & badge
+    // Helper: Status badge
     function getStatusBadge(status) {
         const norm = normalizeStatus(status);
-        if (norm === "read") {
-            return `<span class="book-shelf-tag tag-read">✓ Read</span>`;
-        }
-        if (norm === "currently-reading") {
-            return `<span class="book-shelf-tag tag-reading">📖 Reading</span>`;
-        }
+        if (norm === "read") return `<span class="book-shelf-tag tag-read">✓ Read</span>`;
+        if (norm === "currently-reading") return `<span class="book-shelf-tag tag-reading">📖 Reading</span>`;
         return `<span class="book-shelf-tag tag-want">🔖 Want to Read</span>`;
     }
 
     /* ==============================================================
-       DATA ENGINE & STREAK CALCULATIONS
+       CORE ACTIVITY MAP & STREAK CALCULATIONS
        ============================================================== */
 
-    // Calculate all verified reading days
     function getVerifiedReadingDays(year = null) {
-        const dateMap = new Map(); // "YYYY-MM-DD" => array of session objects
+        const dateMap = new Map();
 
         // 1. From recorded activity logs
         state.activities.forEach(act => {
@@ -147,12 +165,11 @@
             });
         });
 
-        // 2. From verified book dates (explicit date_started / date_finished)
+        // 2. From verified book dates
         state.books.forEach(b => {
             const finishedDate = toDateString(b.date_finished);
             if (finishedDate && (!year || finishedDate.startsWith(`${year}-`))) {
                 if (!dateMap.has(finishedDate)) dateMap.set(finishedDate, []);
-                // Add completion entry if not already present
                 const existing = dateMap.get(finishedDate);
                 if (!existing.some(e => e.type === "finished" && e.bookId === b.id)) {
                     existing.push({
@@ -180,7 +197,6 @@
         return dateMap;
     }
 
-    // Compute Streak Statistics
     function computeStreakStats() {
         const now = new Date();
         const currentYear = now.getFullYear();
@@ -190,20 +206,16 @@
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = toDateString(yesterday);
 
-        const allDates = getVerifiedReadingDays(); // Map of all dates
+        const allDates = getVerifiedReadingDays();
         const yearDates = getVerifiedReadingDays(currentYear);
 
-        // 1. Current Streak
         let currentStreak = 0;
-        let checkDate = new Date(now);
+        let checkDate = null;
 
-        // If today has reading, start checking from today; else if yesterday has reading, start from yesterday
         if (allDates.has(todayStr)) {
             checkDate = new Date(now);
         } else if (allDates.has(yesterdayStr)) {
             checkDate = new Date(yesterday);
-        } else {
-            checkDate = null;
         }
 
         if (checkDate) {
@@ -218,7 +230,6 @@
             }
         }
 
-        // 2. Best Streak in Current Year
         const sortedYearDays = Array.from(yearDates.keys()).sort();
         let bestStreak = 0;
         let tempStreak = 0;
@@ -241,10 +252,7 @@
             prevDate = curDate;
         }
 
-        // 3. Total Days Read this year
         const totalDaysRead = yearDates.size;
-
-        // 4. Total Books Completed this year
         const completedBooks = state.books.filter(b => {
             const norm = normalizeStatus(b.status);
             if (norm !== "read") return false;
@@ -262,7 +270,786 @@
     }
 
     /* ==============================================================
-       FEATURE 1: READING STREAK DASHBOARD
+       ADVANCED READING ANALYTICS & GRAPH ENGINE
+       ============================================================== */
+
+    function computeAnalytics(range = "yearly", mode = "activity") {
+        const now = new Date();
+        const todayStr = toDateString(now);
+
+        // Define start/end dates for current and prior comparison period
+        let startDate = null;
+        let endDate = todayStr;
+        let priorStartDate = null;
+        let priorEndDate = null;
+
+        if (range === "weekly") {
+            const start = new Date(now);
+            start.setDate(start.getDate() - 6);
+            startDate = toDateString(start);
+
+            const pEnd = new Date(start);
+            pEnd.setDate(pEnd.getDate() - 1);
+            priorEndDate = toDateString(pEnd);
+
+            const pStart = new Date(pEnd);
+            pStart.setDate(pStart.getDate() - 6);
+            priorStartDate = toDateString(pStart);
+        } else if (range === "monthly") {
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            startDate = toDateString(start);
+
+            const pEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+            priorEndDate = toDateString(pEnd);
+            const pStart = new Date(pEnd.getFullYear(), pEnd.getMonth(), 1);
+            priorStartDate = toDateString(pStart);
+        } else if (range === "yearly") {
+            const y = now.getFullYear();
+            startDate = `${y}-01-01`;
+            endDate = `${y}-12-31`;
+
+            priorStartDate = `${y - 1}-01-01`;
+            priorEndDate = `${y - 1}-12-31`;
+        } else {
+            // All Time
+            startDate = "2020-01-01";
+            endDate = "2099-12-31";
+        }
+
+        // Filter sessions within range
+        const isInRange = (d, s, e) => (!s || d >= s) && (!e || d <= e);
+
+        const currentSessions = state.activities.filter(a => a && a.date && isInRange(toDateString(a.date), startDate, endDate));
+        const priorSessions = state.activities.filter(a => a && a.date && isInRange(toDateString(a.date), priorStartDate, priorEndDate));
+
+        // Filter completed books within range
+        const currentCompletedBooks = state.books.filter(b => {
+            if (normalizeStatus(b.status) !== "read") return false;
+            const d = toDateString(b.date_finished || b.created_at);
+            return isInRange(d, startDate, endDate);
+        });
+
+        const priorCompletedBooks = state.books.filter(b => {
+            if (normalizeStatus(b.status) !== "read") return false;
+            const d = toDateString(b.date_finished || b.created_at);
+            return isInRange(d, priorStartDate, priorEndDate);
+        });
+
+        // 1. Total Pages
+        let totalPages = currentSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
+        // Include page counts from completed books if no overlapping session pages
+        currentCompletedBooks.forEach(b => {
+            const bookHasSessions = currentSessions.some(s => s.book_id === b.id && (s.pages || 0) > 0);
+            if (!bookHasSessions && b.pages) {
+                totalPages += Number(b.pages) || 0;
+            }
+        });
+
+        let priorPages = priorSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
+        priorCompletedBooks.forEach(b => {
+            const hasSess = priorSessions.some(s => s.book_id === b.id && (s.pages || 0) > 0);
+            if (!hasSess && b.pages) priorPages += Number(b.pages) || 0;
+        });
+
+        // 2. Total Reading Duration
+        const totalMinutes = currentSessions.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
+        const priorMinutes = priorSessions.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
+
+        // 3. Unique Reading Days
+        const readingDaySet = new Set();
+        currentSessions.forEach(s => s.date && readingDaySet.add(toDateString(s.date)));
+        currentCompletedBooks.forEach(b => {
+            const d = toDateString(b.date_finished);
+            if (d) readingDaySet.add(d);
+        });
+        const readingDays = readingDaySet.size;
+
+        // 4. Books Finished
+        const booksFinished = currentCompletedBooks.length;
+        const priorBooksFinished = priorCompletedBooks.length;
+
+        // 5. Total Sessions
+        const totalSessions = currentSessions.length;
+
+        // 6. Longest Read & Shortest Read
+        let longestReadBook = null;
+        let shortestReadBook = null;
+
+        const candidateBooks = currentCompletedBooks.length > 0
+            ? currentCompletedBooks
+            : state.books.filter(b => normalizeStatus(b.status) === "read");
+
+        candidateBooks.forEach(b => {
+            const p = Number(b.pages) || 0;
+            if (p > 0) {
+                if (!longestReadBook || p > (longestReadBook.pages || 0)) longestReadBook = b;
+                if (!shortestReadBook || p < (shortestReadBook.pages || Infinity)) shortestReadBook = b;
+            }
+        });
+
+        // 7. Pace & Speed Calculations
+        const avgPagesPerDay = readingDays > 0 ? Math.round(totalPages / readingDays) : 0;
+        const avgPagesPerSession = totalSessions > 0 ? Math.round(totalPages / totalSessions) : 0;
+        const avgSessionDuration = totalSessions > 0 ? Math.round(totalMinutes / totalSessions) : 0;
+
+        // Speed in pages per hour
+        let validSpeedMinutes = 0;
+        let validSpeedPages = 0;
+        currentSessions.forEach(s => {
+            if ((s.minutes || 0) > 0 && (s.pages || 0) > 0) {
+                validSpeedMinutes += s.minutes;
+                validSpeedPages += s.pages;
+            }
+        });
+        const readingSpeed = validSpeedMinutes >= 10 ? Math.round((validSpeedPages / validSpeedMinutes) * 60) : null;
+
+        // 8. Best Reading Day (date with maximum pages)
+        const dayPageMap = {};
+        currentSessions.forEach(s => {
+            const d = toDateString(s.date);
+            dayPageMap[d] = (dayPageMap[d] || 0) + (Number(s.pages) || 0);
+        });
+        let bestDay = null;
+        let bestDayPages = 0;
+        Object.keys(dayPageMap).forEach(d => {
+            if (dayPageMap[d] > bestDayPages) {
+                bestDayPages = dayPageMap[d];
+                bestDay = d;
+            }
+        });
+
+        // 9. Longest & Shortest Session
+        let longestSession = null;
+        let shortestSession = null;
+        currentSessions.forEach(s => {
+            const m = Number(s.minutes) || 0;
+            if (m > 0) {
+                if (!longestSession || m > longestSession.minutes) longestSession = s;
+                if (!shortestSession || m < shortestSession.minutes) shortestSession = s;
+            }
+        });
+
+        // 10. Percentage Comparisons with prior period
+        function computePctChange(cur, pri) {
+            if (pri <= 0) return null;
+            return Math.round(((cur - pri) / pri) * 100);
+        }
+        const pagesChangePct = computePctChange(totalPages, priorPages);
+        const timeChangePct = computePctChange(totalMinutes, priorMinutes);
+        const booksChangePct = computePctChange(booksFinished, priorBooksFinished);
+
+        // 11. Interactive Chart Data Generator
+        const chartPoints = [];
+
+        if (range === "weekly") {
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(now);
+                d.setDate(d.getDate() - i);
+                const dateStr = toDateString(d);
+                const dayName = DAY_NAMES[(d.getDay() + 6) % 7];
+
+                const daySessions = currentSessions.filter(s => toDateString(s.date) === dateStr);
+                const dayPages = daySessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
+                const dayMins = daySessions.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
+
+                const val = mode === "time" ? dayMins : dayPages;
+                const formatted = mode === "time" ? formatDuration(dayMins) : `${dayPages}p`;
+
+                chartPoints.push({
+                    label: dayName,
+                    subLabel: d.getDate(),
+                    date: dateStr,
+                    value: val,
+                    formattedVal: formatted,
+                    count: daySessions.length
+                });
+            }
+        } else if (range === "monthly") {
+            const y = now.getFullYear();
+            const m = now.getMonth();
+            const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                const daySessions = currentSessions.filter(s => toDateString(s.date) === dateStr);
+                const dayPages = daySessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
+                const dayMins = daySessions.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
+
+                const val = mode === "time" ? dayMins : dayPages;
+                const formatted = mode === "time" ? formatDuration(dayMins) : `${dayPages}p`;
+
+                chartPoints.push({
+                    label: String(day),
+                    subLabel: MONTH_SHORT[m],
+                    date: dateStr,
+                    value: val,
+                    formattedVal: formatted,
+                    count: daySessions.length
+                });
+            }
+        } else {
+            // Yearly (12 Months)
+            const y = now.getFullYear();
+            for (let i = 0; i < 12; i++) {
+                const prefix = `${y}-${String(i + 1).padStart(2, "0")}`;
+                const monthSessions = currentSessions.filter(s => toDateString(s.date).startsWith(prefix));
+                const monthBooks = currentCompletedBooks.filter(b => toDateString(b.date_finished || b.created_at).startsWith(prefix));
+
+                let monthPages = monthSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
+                monthBooks.forEach(b => {
+                    const hasSess = monthSessions.some(s => s.book_id === b.id && (s.pages || 0) > 0);
+                    if (!hasSess && b.pages) monthPages += Number(b.pages) || 0;
+                });
+
+                const monthMins = monthSessions.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
+                const val = mode === "time" ? monthMins : monthPages;
+                const formatted = mode === "time" ? formatDuration(monthMins) : `${monthPages}p`;
+
+                chartPoints.push({
+                    label: MONTH_SHORT[i],
+                    subLabel: String(y),
+                    date: `${MONTH_NAMES[i]} ${y}`,
+                    value: val,
+                    formattedVal: formatted,
+                    count: monthSessions.length + monthBooks.length
+                });
+            }
+        }
+
+        return {
+            range,
+            mode,
+            totalPages,
+            totalMinutes,
+            readingDays,
+            booksFinished,
+            totalSessions,
+            longestReadBook,
+            shortestReadBook,
+            avgPagesPerDay,
+            avgPagesPerSession,
+            avgSessionDuration,
+            readingSpeed,
+            bestDay,
+            bestDayPages,
+            longestSession,
+            shortestSession,
+            pagesChangePct,
+            timeChangePct,
+            booksChangePct,
+            chartPoints
+        };
+    }
+
+    /* ==============================================================
+       INTERACTIVE VECTOR SVG CHART GENERATOR
+       ============================================================== */
+
+    function generateSvgChart(chartPoints = [], mode = "activity") {
+        if (!chartPoints || chartPoints.length === 0) {
+            return `<div class="chart-empty-state">No activity recorded for this period.</div>`;
+        }
+
+        const width = 640;
+        const height = 220;
+        const padLeft = 45;
+        const padRight = 25;
+        const padTop = 25;
+        const padBottom = 35;
+
+        const plotWidth = width - padLeft - padRight;
+        const plotHeight = height - padTop - padBottom;
+
+        const maxVal = Math.max(10, ...chartPoints.map(p => p.value));
+        const yMax = Math.ceil(maxVal * 1.15);
+
+        // Compute (x, y) coordinates
+        const n = chartPoints.length;
+        const coords = chartPoints.map((pt, i) => {
+            const x = padLeft + (n > 1 ? (i / (n - 1)) * plotWidth : plotWidth / 2);
+            const y = padTop + plotHeight - (pt.value / yMax) * plotHeight;
+            return { x, y, pt };
+        });
+
+        // Build SVG smooth path
+        let pathD = `M ${coords[0].x.toFixed(1)} ${coords[0].y.toFixed(1)}`;
+        for (let i = 0; i < coords.length - 1; i++) {
+            const p0 = i > 0 ? coords[i - 1] : coords[i];
+            const p1 = coords[i];
+            const p2 = coords[i + 1];
+            const p3 = i != coords.length - 2 ? coords[i + 2] : p2;
+
+            const cp1x = p1.x + (p2.x - p0.x) / 6;
+            const cp1y = p1.y + (p2.y - p0.y) / 6;
+            const cp2x = p2.x - (p3.x - p1.x) / 6;
+            const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+            pathD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+        }
+
+        // Area path for gradient fill
+        const firstX = coords[0].x.toFixed(1);
+        const lastX = coords[coords.length - 1].x.toFixed(1);
+        const bottomY = (padTop + plotHeight).toFixed(1);
+        const areaD = `${pathD} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
+
+        // Horizontal Gridlines & Y-Axis Labels (4 ticks)
+        let gridLinesHtml = "";
+        const yTicks = [0, 0.33, 0.66, 1];
+        yTicks.forEach(pct => {
+            const val = Math.round(yMax * pct);
+            const yPos = (padTop + plotHeight - pct * plotHeight).toFixed(1);
+            const label = mode === "time" ? (val >= 60 ? `${Math.round(val / 60)}h` : `${val}m`) : `${val}p`;
+
+            gridLinesHtml += `
+                <line x1="${padLeft}" y1="${yPos}" x2="${width - padRight}" y2="${yPos}" stroke="#E6E0D4" stroke-dasharray="3,3" stroke-width="1.2" />
+                <text x="${padLeft - 8}" y="${Number(yPos) + 3}" fill="#888" font-size="10" font-family="'IBM Plex Mono', monospace" text-anchor="end">${label}</text>
+            `;
+        });
+
+        // X-Axis Labels (sample every 1, 2, or 5 depending on count)
+        let xLabelsHtml = "";
+        const step = n > 20 ? 5 : (n > 10 ? 2 : 1);
+        coords.forEach((c, idx) => {
+            if (idx % step === 0 || idx === n - 1) {
+                xLabelsHtml += `
+                    <text x="${c.x.toFixed(1)}" y="${height - 12}" fill="#666" font-size="10.5" font-weight="600" font-family="'Space Grotesk', sans-serif" text-anchor="middle">${escapeHtml(c.pt.label)}</text>
+                `;
+            }
+        });
+
+        // Interactive Data Circles
+        let circlesHtml = "";
+        coords.forEach((c, idx) => {
+            circlesHtml += `
+                <g class="chart-point-group" data-idx="${idx}" data-val="${c.pt.formattedVal}" data-date="${escapeHtml(c.pt.date)}">
+                    <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4.5" class="chart-node" />
+                    <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="14" class="chart-hit-target" />
+                </g>
+            `;
+        });
+
+        return `
+            <div class="reading-svg-chart-wrap">
+                <svg viewBox="0 0 ${width} ${height}" class="reading-svg-chart" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="chartAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#A8C9A1" stop-opacity="0.38" />
+                            <stop offset="100%" stop-color="#A8C9A1" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    ${gridLinesHtml}
+                    <path d="${areaD}" fill="url(#chartAreaGrad)" />
+                    <path d="${pathD}" fill="none" stroke="#2B2926" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                    ${xLabelsHtml}
+                    ${circlesHtml}
+                </svg>
+                <div id="chartTooltip" class="chart-tooltip"></div>
+            </div>
+        `;
+    }
+
+    /* ==============================================================
+       FEATURE: READING ANALYTICS COMPONENT
+       ============================================================== */
+
+    function renderReadingAnalytics() {
+        const container = document.getElementById("bookAnalyticsSection");
+        if (!container) return;
+
+        const data = computeAnalytics(state.analyticsRange, state.analyticsMode);
+
+        // Format Longest & Shortest read cards
+        let longestCard = `
+            <div class="stat-book-card">
+                <div class="stat-book-info">
+                    <span class="stat-book-tag">LONGEST READ</span>
+                    <div class="stat-book-pages">${data.longestReadBook?.pages ? `${data.longestReadBook.pages.toLocaleString()}` : "—"} <span class="stat-book-unit">pages</span></div>
+                    <div class="stat-book-title">${escapeHtml(data.longestReadBook?.title || "No completed books")}</div>
+                </div>
+                ${data.longestReadBook?.image_url ? `<img src="${escapeHtml(data.longestReadBook.image_url)}" class="stat-book-thumb" alt="Cover">` : ""}
+            </div>
+        `;
+
+        let shortestCard = `
+            <div class="stat-book-card">
+                <div class="stat-book-info">
+                    <span class="stat-book-tag">SHORTEST READ</span>
+                    <div class="stat-book-pages">${data.shortestReadBook?.pages ? `${data.shortestReadBook.pages.toLocaleString()}` : "—"} <span class="stat-book-unit">pages</span></div>
+                    <div class="stat-book-title">${escapeHtml(data.shortestReadBook?.title || "No completed books")}</div>
+                </div>
+                ${data.shortestReadBook?.image_url ? `<img src="${escapeHtml(data.shortestReadBook.image_url)}" class="stat-book-thumb" alt="Cover">` : ""}
+            </div>
+        `;
+
+        // Period Comparison Badge
+        let compBadge = "";
+        if (data.pagesChangePct !== null) {
+            const isPos = data.pagesChangePct >= 0;
+            compBadge = `<span class="period-comp-badge ${isPos ? "positive" : "negative"}">${isPos ? "▲" : "▼"} ${Math.abs(data.pagesChangePct)}% vs prior</span>`;
+        }
+
+        const formattedTime = formatDuration(data.totalMinutes);
+
+        container.innerHTML = `
+            <div class="analytics-card">
+                <!-- Header with Title & Range Tabs -->
+                <div class="analytics-top-bar">
+                    <div class="analytics-title-group">
+                        <h2 class="analytics-main-title">✨ Reading Stats ✨</h2>
+                        <span class="analytics-sub">Personal analytics and progress breakdown</span>
+                    </div>
+
+                    <div class="analytics-range-tabs">
+                        <button type="button" class="range-tab ${state.analyticsRange === "weekly" ? "active" : ""}" data-range="weekly">Weekly</button>
+                        <span class="range-dot">•</span>
+                        <button type="button" class="range-tab ${state.analyticsRange === "monthly" ? "active" : ""}" data-range="monthly">Monthly</button>
+                        <span class="range-dot">•</span>
+                        <button type="button" class="range-tab ${state.analyticsRange === "yearly" ? "active" : ""}" data-range="yearly">Yearly</button>
+                        <span class="range-dot">•</span>
+                        <button type="button" class="range-tab ${state.analyticsRange === "all" ? "active" : ""}" data-range="all">All time</button>
+                    </div>
+                </div>
+
+                <!-- Hero Highlights Row: Longest Read, Shortest Read -->
+                <div class="analytics-hero-row">
+                    ${longestCard}
+                    ${shortestCard}
+                </div>
+
+                <!-- Key Totals Strip -->
+                <div class="analytics-totals-strip">
+                    <div class="total-item">
+                        <div class="total-val">${data.booksFinished}</div>
+                        <div class="total-lbl">Books finished</div>
+                    </div>
+                    <div class="total-divider"></div>
+                    <div class="total-item">
+                        <div class="total-val">${data.readingDays}</div>
+                        <div class="total-lbl">Days reading</div>
+                    </div>
+                    <div class="total-divider"></div>
+                    <div class="total-item">
+                        <div class="total-val">${data.totalPages.toLocaleString()} ${compBadge}</div>
+                        <div class="total-lbl">Total pages</div>
+                    </div>
+                    <div class="total-divider"></div>
+                    <div class="total-item">
+                        <div class="total-val">${formattedTime}</div>
+                        <div class="total-lbl">Total time</div>
+                    </div>
+                </div>
+
+                <!-- Mode Toggles: Activity vs Time -->
+                <div class="analytics-chart-controls">
+                    <div class="chart-mode-pill-group">
+                        <button type="button" class="chart-mode-pill ${state.analyticsMode === "activity" ? "active" : ""}" data-mode="activity">
+                            📖 Activity (${state.analyticsMode === "activity" ? "Pages" : "Pages"})
+                        </button>
+                        <button type="button" class="chart-mode-pill ${state.analyticsMode === "time" ? "active" : ""}" data-mode="time">
+                            ⏱️ Time (Duration)
+                        </button>
+                    </div>
+                    <span class="chart-legend-hint">Hover points for detailed session breakdown</span>
+                </div>
+
+                <!-- Interactive SVG Graph -->
+                <div id="readingGraphContainer" class="chart-outer-container">
+                    ${generateSvgChart(data.chartPoints, state.analyticsMode)}
+                </div>
+
+                <!-- Pace & Session Statistics Grid -->
+                <div class="analytics-pace-grid">
+                    <div class="pace-tile">
+                        <div class="pace-icon-wrap">📅</div>
+                        <div class="pace-info">
+                            <div class="pace-val">~${data.avgPagesPerDay}p</div>
+                            <div class="pace-lbl">Avg. per day</div>
+                        </div>
+                    </div>
+
+                    <div class="pace-tile">
+                        <div class="pace-icon-wrap">⏱️</div>
+                        <div class="pace-info">
+                            <div class="pace-val">${data.totalSessions}</div>
+                            <div class="pace-lbl">Total sessions</div>
+                        </div>
+                    </div>
+
+                    <div class="pace-tile">
+                        <div class="pace-icon-wrap">🏆</div>
+                        <div class="pace-info">
+                            <div class="pace-val">${data.bestDayPages > 0 ? `${data.bestDayPages}p` : "—"}</div>
+                            <div class="pace-lbl">Best day ${data.bestDay ? `(${data.bestDay.slice(5)})` : ""}</div>
+                        </div>
+                    </div>
+
+                    <div class="pace-tile">
+                        <div class="pace-icon-wrap">⚡</div>
+                        <div class="pace-info">
+                            <div class="pace-val">${data.readingSpeed ? `~${data.readingSpeed}p` : "—"}</div>
+                            <div class="pace-lbl">Pages / hour</div>
+                        </div>
+                    </div>
+
+                    <div class="pace-tile">
+                        <div class="pace-icon-wrap">📖</div>
+                        <div class="pace-info">
+                            <div class="pace-val">~${data.avgPagesPerSession}p</div>
+                            <div class="pace-lbl">Avg. per session</div>
+                        </div>
+                    </div>
+
+                    <div class="pace-tile">
+                        <div class="pace-icon-wrap">⏳</div>
+                        <div class="pace-info">
+                            <div class="pace-val">${data.avgSessionDuration > 0 ? `${data.avgSessionDuration}m` : "—"}</div>
+                            <div class="pace-lbl">Avg. duration</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Wire range tabs
+        container.querySelectorAll(".range-tab").forEach(tab => {
+            tab.addEventListener("click", () => {
+                state.analyticsRange = tab.dataset.range;
+                renderReadingAnalytics();
+            });
+        });
+
+        // Wire mode buttons
+        container.querySelectorAll(".chart-mode-pill").forEach(pill => {
+            pill.addEventListener("click", () => {
+                state.analyticsMode = pill.dataset.mode;
+                renderReadingAnalytics();
+            });
+        });
+
+        // Wire SVG Tooltip hover
+        setupChartTooltips(container, data.chartPoints);
+    }
+
+    function setupChartTooltips(container, chartPoints) {
+        const tooltip = container.querySelector("#chartTooltip");
+        const nodeGroups = container.querySelectorAll(".chart-point-group");
+        if (!tooltip || !nodeGroups) return;
+
+        nodeGroups.forEach(group => {
+            group.addEventListener("mouseenter", (e) => {
+                const idx = parseInt(group.dataset.idx, 10);
+                const pt = chartPoints[idx];
+                if (!pt) return;
+
+                const dateText = pt.date || pt.label;
+                const sessionsText = pt.count > 0 ? `(${pt.count} activity logged)` : "(no activity logged)";
+
+                tooltip.innerHTML = `
+                    <div class="tooltip-date">${escapeHtml(dateText)}</div>
+                    <div class="tooltip-val">${pt.formattedVal}</div>
+                    <div class="tooltip-sub">${sessionsText}</div>
+                `;
+
+                tooltip.style.display = "block";
+                const rect = group.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+
+                const left = rect.left - containerRect.left + (rect.width / 2);
+                const top = rect.top - containerRect.top - 55;
+
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+                tooltip.style.transform = "translateX(-50%)";
+            });
+
+            group.addEventListener("mouseleave", () => {
+                tooltip.style.display = "none";
+            });
+        });
+    }
+
+    /* ==============================================================
+       FEATURE: LIVE READING SESSION TRACKER & TIMER
+       ============================================================== */
+
+    function renderLiveSessionTracker() {
+        const container = document.getElementById("bookLiveTrackerWidget");
+        if (!container) return;
+
+        const live = state.liveSession;
+        const mins = Math.floor(live.elapsedSeconds / 60);
+        const secs = live.elapsedSeconds % 60;
+        const timeDisplay = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+
+        // Populate book options (currently reading first, then all)
+        const readingBooks = state.books.filter(b => normalizeStatus(b.status) === "currently-reading");
+        const otherBooks = state.books.filter(b => normalizeStatus(b.status) !== "currently-reading");
+        const allSorted = [...readingBooks, ...otherBooks];
+
+        const optionsHtml = allSorted.map(b => {
+            const isSel = b.id === live.bookId ? "selected" : "";
+            const isCur = normalizeStatus(b.status) === "currently-reading" ? " (Currently Reading)" : "";
+            return `<option value="${escapeHtml(b.id)}" ${isSel}>${escapeHtml(b.title)}${isCur}</option>`;
+        }).join("");
+
+        container.innerHTML = `
+            <div class="live-tracker-card ${live.active ? "is-running" : ""}">
+                <div class="tracker-header">
+                    <div class="tracker-title-group">
+                        <span class="tracker-badge">⏱️ LIVE SESSION TRACKER</span>
+                        <h3 class="tracker-heading">Track Your Reading Session</h3>
+                    </div>
+                    <div class="tracker-timer-display" id="trackerTimerDisplay">${timeDisplay}</div>
+                </div>
+
+                <div class="tracker-controls-row">
+                    <div class="tracker-field">
+                        <label for="trackerBookSelect">Reading Book:</label>
+                        <select id="trackerBookSelect" class="tracker-select" ${live.active ? "disabled" : ""}>
+                            <option value="">-- Choose book to read --</option>
+                            ${optionsHtml}
+                        </select>
+                    </div>
+
+                    <div class="tracker-page-inputs">
+                        <div class="page-input-wrap">
+                            <label for="trackerStartPage">Start Page:</label>
+                            <input type="number" id="trackerStartPage" placeholder="e.g. 45" min="1" class="tracker-num-input">
+                        </div>
+                        <div class="page-input-wrap">
+                            <label for="trackerEndPage">End Page:</label>
+                            <input type="number" id="trackerEndPage" placeholder="e.g. 75" min="1" class="tracker-num-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tracker-notes-row">
+                    <input type="text" id="trackerNotes" placeholder="Optional session notes, chapter thoughts..." class="tracker-notes-input">
+                </div>
+
+                <div class="tracker-actions-bar">
+                    ${!live.active ? `
+                        <button type="button" id="startSessionBtn" class="tracker-btn btn-start">▶ Start Reading Timer</button>
+                    ` : `
+                        <button type="button" id="pauseSessionBtn" class="tracker-btn btn-pause">${live.paused ? "▶ Resume" : "⏸ Pause"}</button>
+                        <button type="button" id="stopSessionBtn" class="tracker-btn btn-stop">⏹ Finish & Log Session</button>
+                        <button type="button" id="cancelSessionBtn" class="tracker-btn btn-cancel">✕ Cancel</button>
+                    `}
+                    <div id="trackerFeedback" class="tracker-feedback"></div>
+                </div>
+            </div>
+        `;
+
+        // Wire event listeners
+        const startBtn = document.getElementById("startSessionBtn");
+        const pauseBtn = document.getElementById("pauseSessionBtn");
+        const stopBtn = document.getElementById("stopSessionBtn");
+        const cancelBtn = document.getElementById("cancelSessionBtn");
+        const bookSelect = document.getElementById("trackerBookSelect");
+        const startPageInput = document.getElementById("trackerStartPage");
+        const endPageInput = document.getElementById("trackerEndPage");
+        const notesInput = document.getElementById("trackerNotes");
+        const feedback = document.getElementById("trackerFeedback");
+
+        if (startBtn) {
+            startBtn.addEventListener("click", () => {
+                const bookId = bookSelect.value;
+                if (!bookId) {
+                    if (feedback) feedback.textContent = "Please pick a book first!";
+                    return;
+                }
+                live.active = true;
+                live.paused = false;
+                live.bookId = bookId;
+                live.startTime = new Date();
+                live.elapsedSeconds = 0;
+
+                live.intervalId = setInterval(() => {
+                    if (!live.paused) {
+                        live.elapsedSeconds++;
+                        const dEl = document.getElementById("trackerTimerDisplay");
+                        if (dEl) {
+                            const m = Math.floor(live.elapsedSeconds / 60);
+                            const s = live.elapsedSeconds % 60;
+                            dEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+                        }
+                    }
+                }, 1000);
+
+                renderLiveSessionTracker();
+            });
+        }
+
+        if (pauseBtn) {
+            pauseBtn.addEventListener("click", () => {
+                live.paused = !live.paused;
+                renderLiveSessionTracker();
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", () => {
+                clearInterval(live.intervalId);
+                live.active = false;
+                live.paused = false;
+                live.elapsedSeconds = 0;
+                renderLiveSessionTracker();
+            });
+        }
+
+        if (stopBtn) {
+            stopBtn.addEventListener("click", async () => {
+                clearInterval(live.intervalId);
+                const book = state.books.find(b => b.id === live.bookId);
+                const bookTitle = book ? book.title : "Book";
+
+                const startP = Number(startPageInput.value) || 0;
+                const endP = Number(endPageInput.value) || 0;
+                let pagesRead = 0;
+                if (endP > startP) pagesRead = endP - startP;
+                else if (endP > 0) pagesRead = endP;
+
+                const durationMins = Math.max(1, Math.round(live.elapsedSeconds / 60));
+                const notes = notesInput.value.trim();
+
+                const newSession = {
+                    id: "act-" + Date.now(),
+                    date: toDateString(new Date()),
+                    book_id: live.bookId,
+                    book_title: bookTitle,
+                    minutes: durationMins,
+                    start_page: startP || undefined,
+                    end_page: endP || undefined,
+                    pages: pagesRead,
+                    notes: notes
+                };
+
+                state.activities.push(newSession);
+
+                // Save to local storage & Cloudflare
+                try {
+                    localStorage.setItem("books_reading_activity", JSON.stringify(state.activities));
+                    if (window.cfClient) {
+                        const cloudState = await window.cfClient.getState().catch(() => ({}));
+                        cloudState.reading_activity = state.activities;
+                        await window.cfClient.saveState(cloudState).catch(() => {});
+                    }
+                } catch (_) {}
+
+                // Reset timer
+                live.active = false;
+                live.paused = false;
+                live.elapsedSeconds = 0;
+
+                // Refresh all visualizations immediately
+                renderAll();
+            });
+        }
+    }
+
+    /* ==============================================================
+       EXISTING FEATURES PRESERVED & ENHANCED
        ============================================================== */
 
     function renderStreakDashboard() {
@@ -295,30 +1082,24 @@
         `;
     }
 
-    /* ==============================================================
-       FEATURE 2: INTERACTIVE READING CALENDAR
-       ============================================================== */
-
     function renderCalendar() {
         const container = document.getElementById("bookCalendarWidget");
         if (!container) return;
 
         const y = state.calendarYear;
-        const m = state.calendarMonth; // 0-indexed
+        const m = state.calendarMonth;
         const monthName = MONTH_NAMES[m];
 
         const firstDay = new Date(y, m, 1);
         const lastDay = new Date(y, m + 1, 0);
         const totalDays = lastDay.getDate();
 
-        // Monday-based indexing: Sunday is 6, Monday is 0
         let startDay = firstDay.getDay() - 1;
         if (startDay === -1) startDay = 6;
 
         const activeDaysMap = getVerifiedReadingDays(y);
         const todayStr = toDateString(new Date());
 
-        // Header
         let html = `
             <div class="book-calendar-header">
                 <div class="cal-title-group">
@@ -339,12 +1120,10 @@
                 <div class="cal-days">
         `;
 
-        // Blank days prior to month start
         for (let i = 0; i < startDay; i++) {
             html += `<div class="cal-day-cell is-empty"></div>`;
         }
 
-        // Month days
         for (let day = 1; day <= totalDays; day++) {
             const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const hasActivity = activeDaysMap.has(dateStr);
@@ -384,7 +1163,6 @@
                 </div>
             </div>
 
-            <!-- Calendar Legend & Date Inspector -->
             <div class="cal-footer-row">
                 <div class="cal-legend">
                     <span class="legend-item"><span class="legend-box has-activity"></span> Active day</span>
@@ -399,7 +1177,6 @@
 
         container.innerHTML = html;
 
-        // Attach listeners
         document.getElementById("calPrevMonth")?.addEventListener("click", () => {
             state.calendarMonth--;
             if (state.calendarMonth < 0) {
@@ -441,7 +1218,6 @@
         });
     }
 
-    // Detail text for selected calendar date
     function renderSelectedDateInfo() {
         if (!state.selectedDate) {
             return `<span class="cal-hint-text">💡 Tap any active date to view reading notes</span>`;
@@ -486,17 +1262,11 @@
         `;
     }
 
-    /* ==============================================================
-       FEATURE 3: MONTHLY READING ACTIVITY
-       ============================================================== */
-
     function renderMonthlyActivity() {
         const container = document.getElementById("bookMonthlyWidget");
         if (!container) return;
 
         const y = state.calendarYear;
-
-        // Compute completed books per month
         const monthlyCounts = Array(12).fill(0);
         const monthlyBooks = Array.from({ length: 12 }, () => []);
 
@@ -533,7 +1303,6 @@
             const pct = Math.round((count / maxCount) * 100);
             const mName = MONTH_SHORT[i];
 
-            // Render miniature thumbnails
             const thumbnails = books.slice(0, 4).map(b => `
                 <img src="${escapeHtml(b.image_url)}" class="monthly-thumb" title="${escapeHtml(b.title)}" alt="${escapeHtml(b.title)}">
             `).join("");
@@ -559,16 +1328,11 @@
         container.innerHTML = html;
     }
 
-    /* ==============================================================
-       FEATURE 4: BOOK SHELVES & READING STATUS
-       ============================================================== */
-
     function renderShelves() {
         const tabsContainer = document.getElementById("bookShelfTabs");
         const booksGrid = document.querySelector(".books-row");
         if (!tabsContainer || !booksGrid) return;
 
-        // Shelf counts
         const counts = {
             all: state.books.length,
             read: 0,
@@ -581,7 +1345,6 @@
             if (counts[norm] !== undefined) counts[norm]++;
         });
 
-        // Render shelf tabs
         tabsContainer.innerHTML = `
             <button type="button" class="shelf-tab ${state.activeShelf === "all" ? "active" : ""}" data-shelf="all">
                 All Books <span class="shelf-pill">${counts.all}</span>
@@ -604,7 +1367,6 @@
             });
         });
 
-        // Filter and display books
         let filtered = state.books.filter(b => {
             if (state.activeShelf !== "all") {
                 const norm = normalizeStatus(b.status);
@@ -650,7 +1412,6 @@
             `;
         }).join("");
 
-        // Attach click to open detail modal
         booksGrid.querySelectorAll(".book").forEach(card => {
             card.addEventListener("click", () => openBookDetailModal(card.dataset.recordId));
             card.addEventListener("keydown", (e) => {
@@ -662,10 +1423,6 @@
         });
     }
 
-    /* ==============================================================
-       FEATURE 5: READING GOALS AND CHALLENGES
-       ============================================================== */
-
     function renderReadingGoal() {
         const container = document.getElementById("bookChallengeWidget");
         if (!container) return;
@@ -674,7 +1431,6 @@
         const year = now.getFullYear();
         const targetGoal = (state.goals && state.goals[year]) ? Number(state.goals[year].target) : 12;
 
-        // Completed in current year
         const completed = state.books.filter(b => {
             const norm = normalizeStatus(b.status);
             if (norm !== "read") return false;
@@ -685,7 +1441,6 @@
         const pct = targetGoal > 0 ? Math.min(100, Math.round((completed / targetGoal) * 100)) : 0;
         const remaining = Math.max(0, targetGoal - completed);
 
-        // Days remaining in year
         const endOfYear = new Date(year, 11, 31);
         const daysLeft = Math.max(0, Math.ceil((endOfYear.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
@@ -735,7 +1490,6 @@
         if (!state.goals) state.goals = {};
         state.goals[year] = { target: num };
 
-        // Save locally and via Cloudflare
         try {
             localStorage.setItem("books_reading_goals", JSON.stringify(state.goals));
             if (window.cfClient) {
@@ -747,10 +1501,6 @@
 
         renderReadingGoal();
     }
-
-    /* ==============================================================
-       BOOK DETAIL & READING HISTORY MODAL
-       ============================================================== */
 
     function setupBookDetailModal() {
         const backdrop = document.getElementById("bookModalBackdrop");
@@ -779,7 +1529,6 @@
         const statusSelect = document.getElementById("modalBookStatusSelect");
         if (statusSelect) statusSelect.value = normStatus;
 
-        // Rating
         const ratingWrap = document.getElementById("modalBookRating");
         if (ratingWrap) {
             const r = book.rating || 0;
@@ -787,7 +1536,6 @@
             ratingWrap.textContent = r > 0 ? "★".repeat(full) + "☆".repeat(Math.max(0, 5 - full)) + ` (${r}/5)` : "Unrated";
         }
 
-        // Dates
         const datesWrap = document.getElementById("modalBookDates");
         if (datesWrap) {
             let dateText = [];
@@ -796,13 +1544,11 @@
             datesWrap.textContent = dateText.length > 0 ? dateText.join(" • ") : "No dates recorded";
         }
 
-        // Review / Notes
         const reviewEl = document.getElementById("modalBookNotes");
         if (reviewEl) {
             reviewEl.textContent = book.review || book.notes || "No notes logged for this book.";
         }
 
-        // Reading Activity Timeline for this book
         const timelineEl = document.getElementById("modalBookTimeline");
         if (timelineEl) {
             const bookActs = state.activities.filter(a => a.book_id === book.id);
@@ -818,28 +1564,22 @@
             }
         }
 
-        // Attach Quick Status Change listener
         const updateStatusBtn = document.getElementById("modalUpdateStatusBtn");
         if (updateStatusBtn) {
             updateStatusBtn.onclick = async () => {
                 const newStatus = statusSelect.value;
                 book.status = newStatus;
 
-                // If moving to read and no date_finished, prompt or default to today
                 if (newStatus === "read" && !book.date_finished) {
                     book.date_finished = toDateString(new Date());
                 }
 
-                // Persist status change
                 saveBookOverride(book.id, {
                     status: newStatus,
                     date_finished: book.date_finished
                 });
 
-                renderShelves();
-                renderStreakDashboard();
-                renderMonthlyActivity();
-                renderReadingGoal();
+                renderAll();
                 closeBookDetailModal();
             };
         }
@@ -858,7 +1598,6 @@
         }
     }
 
-    // Save individual book overrides to D1 / LocalStorage
     async function saveBookOverride(bookId, data) {
         if (!state.overrides) state.overrides = {};
         state.overrides[bookId] = { ...(state.overrides[bookId] || {}), ...data };
@@ -875,7 +1614,7 @@
     }
 
     /* ==============================================================
-       INITIALIZATION & DATA LOADING
+       INITIALIZATION & RENDERING
        ============================================================== */
 
     function populateStateFromData(cloudBooks = [], cloudState = {}) {
@@ -954,6 +1693,8 @@
     function renderAll() {
         renderReadingGoal();
         renderStreakDashboard();
+        renderLiveSessionTracker();
+        renderReadingAnalytics();
         renderCalendar();
         renderMonthlyActivity();
         renderShelves();
@@ -993,7 +1734,6 @@
         }
     }
 
-    // Expose hook so admin or other modules can refresh
     window.refreshBooksExperience = initBooks;
 
     if (document.readyState === "loading") {
