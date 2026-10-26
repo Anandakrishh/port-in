@@ -1,15 +1,15 @@
 /**
  * ==============================================================
  * Books Section Architecture & Reading Experience Engine
- * - Reading Stats & Interactive SVG Graph (Activity & Time Modes)
- * - Time Range Filters: Weekly, Monthly, Yearly, All Time
- * - Deep Reading Analytics: Pace, Speed, Best Day, Longest/Shortest
- * - Live Reading Session Stopwatch & Tracker
+ * - Reading Overview & Annual Reading Challenge
  * - Reading Streak Dashboard (Current, Best, Total Days, Books Read)
- * - Interactive Reading Calendar (7-column grid, active cells, inspector)
- * - Monthly Activity Visualization (Jan - Dec horizontal progress tracks)
+ * - Live Reading Session Stopwatch, Manual Logger & Review Drawer
+ * - Deep Reading Analytics & Interactive Vector SVG Graph
+ *   (Weekly, Monthly, Yearly, All-Time; Activity vs Time modes;
+ *    Pace metrics: Speed, Avg/Session, Best Day, Longest/Shortest)
+ * - Interactive Reading Calendar (7-column grid, active dates, inspector)
+ * - Monthly Reading Activity Breakdown (Books / Pages / Time modes, month inspector)
  * - Shelves & Reading Status Filter (All, Read, Reading, Want to Read)
- * - Reading Goals & Challenge Tracker (Progress, remaining days/books)
  * - Book Detail & Reading History Modal
  * ==============================================================
  */
@@ -25,8 +25,11 @@
         activeShelf: "all",
         searchQuery: "",
         selectedDate: null,
+        selectedMonth: null, // For monthly inspector
+        monthlyMode: "books", // 'books' | 'pages' | 'time'
         analyticsRange: "yearly", // 'weekly' | 'monthly' | 'yearly' | 'all'
         analyticsMode: "activity", // 'activity' | 'time'
+        showRecordedSessions: false,
         books: [],
         activities: [],
         goals: {},
@@ -94,6 +97,76 @@
         }
     };
 
+    // Authentic seed reading sessions for ongoing reading ("It Ends with us")
+    const DEFAULT_ACTIVITIES = [
+        {
+            id: "act-seed-1",
+            date: "2026-10-10",
+            book_id: "book-it-ends-with-us",
+            book_title: "It Ends with us",
+            start_page: 1,
+            end_page: 45,
+            pages: 45,
+            minutes: 40,
+            notes: "Started reading Colleen Hoover. Gripping opening chapters."
+        },
+        {
+            id: "act-seed-2",
+            date: "2026-10-22",
+            book_id: "book-it-ends-with-us",
+            book_title: "It Ends with us",
+            start_page: 46,
+            end_page: 95,
+            pages: 50,
+            minutes: 45,
+            notes: "Chapters 4 to 6. Lily and Ryle encounter."
+        },
+        {
+            id: "act-seed-3",
+            date: "2026-10-23",
+            book_id: "book-it-ends-with-us",
+            book_title: "It Ends with us",
+            start_page: 96,
+            end_page: 145,
+            pages: 50,
+            minutes: 42,
+            notes: "Chapters 7 to 9. Fast-paced drama."
+        },
+        {
+            id: "act-seed-4",
+            date: "2026-10-24",
+            book_id: "book-it-ends-with-us",
+            book_title: "It Ends with us",
+            start_page: 146,
+            end_page: 195,
+            pages: 50,
+            minutes: 46,
+            notes: "Chapters 10 to 12. Emotional backstory revealed."
+        },
+        {
+            id: "act-seed-5",
+            date: "2026-10-25",
+            book_id: "book-it-ends-with-us",
+            book_title: "It Ends with us",
+            start_page: 196,
+            end_page: 240,
+            pages: 45,
+            minutes: 38,
+            notes: "Chapters 13 to 15. Boston flower shop scenes."
+        },
+        {
+            id: "act-seed-6",
+            date: "2026-10-26",
+            book_id: "book-it-ends-with-us",
+            book_title: "It Ends with us",
+            start_page: 241,
+            end_page: 290,
+            pages: 50,
+            minutes: 44,
+            notes: "Chapters 16 to 18. Today's evening reading."
+        }
+    ];
+
     // Helper: Escape HTML
     function escapeHtml(str = "") {
         return String(str)
@@ -158,14 +231,18 @@
             if (!dateMap.has(d)) dateMap.set(d, []);
             dateMap.get(d).push({
                 type: "session",
+                id: act.id,
                 bookId: act.book_id,
+                bookTitle: act.book_title,
                 pages: act.pages || 0,
+                startPage: act.start_page,
+                endPage: act.end_page,
                 notes: act.notes || "",
                 minutes: act.minutes || 0
             });
         });
 
-        // 2. From verified book dates
+        // 2. From verified book completion dates
         state.books.forEach(b => {
             const finishedDate = toDateString(b.date_finished);
             if (finishedDate && (!year || finishedDate.startsWith(`${year}-`))) {
@@ -175,6 +252,8 @@
                     existing.push({
                         type: "finished",
                         bookId: b.id,
+                        bookTitle: b.title,
+                        pages: b.pages || 0,
                         notes: `Completed "${b.title}"`
                     });
                 }
@@ -184,10 +263,11 @@
             if (startedDate && (!year || startedDate.startsWith(`${year}-`))) {
                 if (!dateMap.has(startedDate)) dateMap.set(startedDate, []);
                 const existing = dateMap.get(startedDate);
-                if (!existing.some(e => e.type === "started" && e.bookId === b.id)) {
+                if (!existing.some(e => e.bookId === b.id)) {
                     existing.push({
                         type: "started",
                         bookId: b.id,
+                        bookTitle: b.title,
                         notes: `Started reading "${b.title}"`
                     });
                 }
@@ -277,7 +357,6 @@
         const now = new Date();
         const todayStr = toDateString(now);
 
-        // Define start/end dates for current and prior comparison period
         let startDate = null;
         let endDate = todayStr;
         let priorStartDate = null;
@@ -316,13 +395,11 @@
             endDate = "2099-12-31";
         }
 
-        // Filter sessions within range
         const isInRange = (d, s, e) => (!s || d >= s) && (!e || d <= e);
 
         const currentSessions = state.activities.filter(a => a && a.date && isInRange(toDateString(a.date), startDate, endDate));
         const priorSessions = state.activities.filter(a => a && a.date && isInRange(toDateString(a.date), priorStartDate, priorEndDate));
 
-        // Filter completed books within range
         const currentCompletedBooks = state.books.filter(b => {
             if (normalizeStatus(b.status) !== "read") return false;
             const d = toDateString(b.date_finished || b.created_at);
@@ -337,7 +414,6 @@
 
         // 1. Total Pages
         let totalPages = currentSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
-        // Include page counts from completed books if no overlapping session pages
         currentCompletedBooks.forEach(b => {
             const bookHasSessions = currentSessions.some(s => s.book_id === b.id && (s.pages || 0) > 0);
             if (!bookHasSessions && b.pages) {
@@ -371,7 +447,7 @@
         // 5. Total Sessions
         const totalSessions = currentSessions.length;
 
-        // 6. Longest Read & Shortest Read
+        // 6. Longest Read & Shortest Read (Books)
         let longestReadBook = null;
         let shortestReadBook = null;
 
@@ -392,7 +468,6 @@
         const avgPagesPerSession = totalSessions > 0 ? Math.round(totalPages / totalSessions) : 0;
         const avgSessionDuration = totalSessions > 0 ? Math.round(totalMinutes / totalSessions) : 0;
 
-        // Speed in pages per hour
         let validSpeedMinutes = 0;
         let validSpeedPages = 0;
         currentSessions.forEach(s => {
@@ -409,6 +484,13 @@
             const d = toDateString(s.date);
             dayPageMap[d] = (dayPageMap[d] || 0) + (Number(s.pages) || 0);
         });
+        currentCompletedBooks.forEach(b => {
+            const d = toDateString(b.date_finished);
+            if (d && !currentSessions.some(s => s.book_id === b.id && toDateString(s.date) === d)) {
+                dayPageMap[d] = (dayPageMap[d] || 0) + (Number(b.pages) || 0);
+            }
+        });
+
         let bestDay = null;
         let bestDayPages = 0;
         Object.keys(dayPageMap).forEach(d => {
@@ -487,8 +569,7 @@
                     count: daySessions.length
                 });
             }
-        } else {
-            // Yearly (12 Months)
+        } else if (range === "yearly") {
             const y = now.getFullYear();
             for (let i = 0; i < 12; i++) {
                 const prefix = `${y}-${String(i + 1).padStart(2, "0")}`;
@@ -514,6 +595,34 @@
                     count: monthSessions.length + monthBooks.length
                 });
             }
+        } else {
+            // All Time: Aggregate across recorded years
+            const curY = now.getFullYear();
+            const years = [curY - 2, curY - 1, curY];
+            years.forEach(yr => {
+                const prefix = `${yr}-`;
+                const yrSessions = state.activities.filter(s => toDateString(s.date).startsWith(prefix));
+                const yrBooks = state.books.filter(b => normalizeStatus(b.status) === "read" && toDateString(b.date_finished || b.created_at).startsWith(prefix));
+
+                let yrPages = yrSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
+                yrBooks.forEach(b => {
+                    const hasSess = yrSessions.some(s => s.book_id === b.id && (s.pages || 0) > 0);
+                    if (!hasSess && b.pages) yrPages += Number(b.pages) || 0;
+                });
+
+                const yrMins = yrSessions.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
+                const val = mode === "time" ? yrMins : yrPages;
+                const formatted = mode === "time" ? formatDuration(yrMins) : `${yrPages}p`;
+
+                chartPoints.push({
+                    label: String(yr),
+                    subLabel: "Year",
+                    date: `Year ${yr}`,
+                    value: val,
+                    formattedVal: formatted,
+                    count: yrSessions.length + yrBooks.length
+                });
+            });
         }
 
         return {
@@ -659,7 +768,6 @@
 
         const data = computeAnalytics(state.analyticsRange, state.analyticsMode);
 
-        // Format Longest & Shortest read cards
         let longestCard = `
             <div class="stat-book-card">
                 <div class="stat-book-info">
@@ -682,7 +790,6 @@
             </div>
         `;
 
-        // Period Comparison Badge
         let compBadge = "";
         if (data.pagesChangePct !== null) {
             const isPos = data.pagesChangePct >= 0;
@@ -690,6 +797,10 @@
         }
 
         const formattedTime = formatDuration(data.totalMinutes);
+
+        // Longest & Shortest Session labels
+        const longestSessionText = data.longestSession ? `${data.longestSession.minutes}m` : "—";
+        const shortestSessionText = data.shortestSession ? `${data.shortestSession.minutes}m` : "—";
 
         container.innerHTML = `
             <div class="analytics-card">
@@ -803,15 +914,14 @@
                     <div class="pace-tile">
                         <div class="pace-icon-wrap">⏳</div>
                         <div class="pace-info">
-                            <div class="pace-val">${data.avgSessionDuration > 0 ? `${data.avgSessionDuration}m` : "—"}</div>
-                            <div class="pace-lbl">Avg. duration</div>
+                            <div class="pace-val">${longestSessionText} / ${shortestSessionText}</div>
+                            <div class="pace-lbl">Longest / Shortest</div>
                         </div>
                     </div>
                 </div>
             </div>
         `;
 
-        // Wire range tabs
         container.querySelectorAll(".range-tab").forEach(tab => {
             tab.addEventListener("click", () => {
                 state.analyticsRange = tab.dataset.range;
@@ -819,7 +929,6 @@
             });
         });
 
-        // Wire mode buttons
         container.querySelectorAll(".chart-mode-pill").forEach(pill => {
             pill.addEventListener("click", () => {
                 state.analyticsMode = pill.dataset.mode;
@@ -827,7 +936,6 @@
             });
         });
 
-        // Wire SVG Tooltip hover
         setupChartTooltips(container, data.chartPoints);
     }
 
@@ -837,7 +945,7 @@
         if (!tooltip || !nodeGroups) return;
 
         nodeGroups.forEach(group => {
-            group.addEventListener("mouseenter", (e) => {
+            group.addEventListener("mouseenter", () => {
                 const idx = parseInt(group.dataset.idx, 10);
                 const pt = chartPoints[idx];
                 if (!pt) return;
@@ -887,11 +995,56 @@
         const otherBooks = state.books.filter(b => normalizeStatus(b.status) !== "currently-reading");
         const allSorted = [...readingBooks, ...otherBooks];
 
+        // Default selected book if none set
+        if (!live.bookId && readingBooks.length > 0) {
+            live.bookId = readingBooks[0].id;
+        }
+
         const optionsHtml = allSorted.map(b => {
             const isSel = b.id === live.bookId ? "selected" : "";
             const isCur = normalizeStatus(b.status) === "currently-reading" ? " (Currently Reading)" : "";
             return `<option value="${escapeHtml(b.id)}" ${isSel}>${escapeHtml(b.title)}${isCur}</option>`;
         }).join("");
+
+        // Find last recorded end page for selected book to suggest starting page
+        let suggestedStartPage = "";
+        if (live.bookId) {
+            const bookSessions = state.activities.filter(a => a.book_id === live.bookId);
+            if (bookSessions.length > 0) {
+                const lastSession = bookSessions[bookSessions.length - 1];
+                if (lastSession.end_page) {
+                    suggestedStartPage = Number(lastSession.end_page) + 1;
+                }
+            }
+        }
+
+        // Build recorded sessions history items
+        const sortedActivities = [...state.activities].reverse();
+        let sessionsListHtml = "";
+
+        if (sortedActivities.length === 0) {
+            sessionsListHtml = `<p class="tracker-empty-history">No sessions recorded yet. Start the timer above to log your first reading session!</p>`;
+        } else {
+            sessionsListHtml = sortedActivities.map(act => {
+                const pageText = (act.start_page && act.end_page)
+                    ? `p. ${act.start_page} – ${act.end_page} (${act.pages}p)`
+                    : (act.pages ? `${act.pages} pages` : "Session");
+                const notesText = act.notes ? `<span class="session-item-notes">"${escapeHtml(act.notes)}"</span>` : "";
+
+                return `
+                    <div class="tracker-session-item" data-id="${escapeHtml(act.id)}">
+                        <div class="session-item-left">
+                            <span class="session-item-date">${escapeHtml(act.date)}</span>
+                            <span class="session-item-title">${escapeHtml(act.book_title || "Book")}</span>
+                            <span class="session-item-pill">${escapeHtml(pageText)}</span>
+                            <span class="session-item-pill">⏱️ ${act.minutes || 0}m</span>
+                            ${notesText}
+                        </div>
+                        <button type="button" class="session-delete-btn" data-id="${escapeHtml(act.id)}" aria-label="Delete session">✕ Delete</button>
+                    </div>
+                `;
+            }).join("");
+        }
 
         container.innerHTML = `
             <div class="live-tracker-card ${live.active ? "is-running" : ""}">
@@ -915,7 +1068,7 @@
                     <div class="tracker-page-inputs">
                         <div class="page-input-wrap">
                             <label for="trackerStartPage">Start Page:</label>
-                            <input type="number" id="trackerStartPage" placeholder="e.g. 45" min="1" class="tracker-num-input">
+                            <input type="number" id="trackerStartPage" placeholder="e.g. 45" value="${suggestedStartPage}" min="1" class="tracker-num-input">
                         </div>
                         <div class="page-input-wrap">
                             <label for="trackerEndPage">End Page:</label>
@@ -928,6 +1081,18 @@
                     <input type="text" id="trackerNotes" placeholder="Optional session notes, chapter thoughts..." class="tracker-notes-input">
                 </div>
 
+                <!-- Manual Duration logging fallback if not using live stopwatch -->
+                ${!live.active ? `
+                    <div class="tracker-manual-row">
+                        <span class="manual-label">📖 Read offline? Log past session:</span>
+                        <div class="manual-input-group">
+                            <span>Minutes:</span>
+                            <input type="number" id="trackerManualMinutes" placeholder="30" min="1" max="600" class="tracker-manual-input">
+                            <button type="button" id="manualLogBtn" class="tracker-btn btn-start" style="padding: 6px 12px; font-size: 12px;">💾 Log</button>
+                        </div>
+                    </div>
+                ` : ""}
+
                 <div class="tracker-actions-bar">
                     ${!live.active ? `
                         <button type="button" id="startSessionBtn" class="tracker-btn btn-start">▶ Start Reading Timer</button>
@@ -938,6 +1103,18 @@
                     `}
                     <div id="trackerFeedback" class="tracker-feedback"></div>
                 </div>
+
+                <!-- Recorded Sessions History Review Section -->
+                <div class="tracker-history-section">
+                    <button type="button" id="trackerHistoryToggleBtn" class="tracker-history-toggle">
+                        📋 ${state.showRecordedSessions ? "Hide" : "View"} Recorded Sessions (${state.activities.length}) ${state.showRecordedSessions ? "▲" : "▼"}
+                    </button>
+                    <div id="trackerHistoryDrawer" class="tracker-history-drawer ${state.showRecordedSessions ? "is-open" : ""}">
+                        <div class="tracker-sessions-list">
+                            ${sessionsListHtml}
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -946,12 +1123,88 @@
         const pauseBtn = document.getElementById("pauseSessionBtn");
         const stopBtn = document.getElementById("stopSessionBtn");
         const cancelBtn = document.getElementById("cancelSessionBtn");
+        const manualLogBtn = document.getElementById("manualLogBtn");
         const bookSelect = document.getElementById("trackerBookSelect");
         const startPageInput = document.getElementById("trackerStartPage");
         const endPageInput = document.getElementById("trackerEndPage");
+        const manualMinutesInput = document.getElementById("trackerManualMinutes");
         const notesInput = document.getElementById("trackerNotes");
         const feedback = document.getElementById("trackerFeedback");
+        const historyToggleBtn = document.getElementById("trackerHistoryToggleBtn");
 
+        // Toggle review sessions drawer
+        if (historyToggleBtn) {
+            historyToggleBtn.addEventListener("click", () => {
+                state.showRecordedSessions = !state.showRecordedSessions;
+                renderLiveSessionTracker();
+            });
+        }
+
+        // Delete recorded session handler
+        container.querySelectorAll(".session-delete-btn").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                const actId = btn.dataset.id;
+                if (!window.confirm("Are you sure you want to delete this recorded reading session?")) return;
+
+                state.activities = state.activities.filter(a => a.id !== actId);
+                try {
+                    localStorage.setItem("books_reading_activity", JSON.stringify(state.activities));
+                    if (window.cfClient) {
+                        const cloudState = await window.cfClient.getState().catch(() => ({}));
+                        cloudState.reading_activity = state.activities;
+                        await window.cfClient.saveState(cloudState).catch(() => {});
+                    }
+                } catch (_) {}
+
+                renderAll();
+            });
+        });
+
+        // Book select changes
+        if (bookSelect) {
+            bookSelect.addEventListener("change", () => {
+                live.bookId = bookSelect.value;
+                // Auto-suggest starting page
+                if (live.bookId) {
+                    const bookSessions = state.activities.filter(a => a.book_id === live.bookId);
+                    if (bookSessions.length > 0) {
+                        const last = bookSessions[bookSessions.length - 1];
+                        if (last.end_page && startPageInput) {
+                            startPageInput.value = Number(last.end_page) + 1;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Input validation helper
+        function validatePages() {
+            const startP = Number(startPageInput?.value) || 0;
+            const endP = Number(endPageInput?.value) || 0;
+
+            if (startPageInput) startPageInput.classList.remove("has-error");
+            if (endPageInput) endPageInput.classList.remove("has-error");
+
+            if (startP < 0 || endP < 0) {
+                if (feedback) feedback.textContent = "Page numbers cannot be negative.";
+                return false;
+            }
+
+            if (startP > 0 && endP > 0 && endP < startP) {
+                if (endPageInput) endPageInput.classList.add("has-error");
+                if (feedback) feedback.textContent = "End page cannot be less than start page.";
+                return false;
+            }
+
+            if (feedback) feedback.textContent = "";
+            return true;
+        }
+
+        if (startPageInput) startPageInput.addEventListener("input", validatePages);
+        if (endPageInput) endPageInput.addEventListener("input", validatePages);
+
+        // Start timer
         if (startBtn) {
             startBtn.addEventListener("click", () => {
                 const bookId = bookSelect.value;
@@ -959,6 +1212,8 @@
                     if (feedback) feedback.textContent = "Please pick a book first!";
                     return;
                 }
+                if (!validatePages()) return;
+
                 live.active = true;
                 live.paused = false;
                 live.bookId = bookId;
@@ -981,6 +1236,7 @@
             });
         }
 
+        // Pause/Resume timer
         if (pauseBtn) {
             pauseBtn.addEventListener("click", () => {
                 live.paused = !live.paused;
@@ -988,6 +1244,7 @@
             });
         }
 
+        // Cancel timer
         if (cancelBtn) {
             cancelBtn.addEventListener("click", () => {
                 clearInterval(live.intervalId);
@@ -998,9 +1255,14 @@
             });
         }
 
+        // Stop & Log session (from timer)
         if (stopBtn) {
             stopBtn.addEventListener("click", async () => {
+                if (!validatePages()) return;
+
+                stopBtn.disabled = true;
                 clearInterval(live.intervalId);
+
                 const book = state.books.find(b => b.id === live.bookId);
                 const bookTitle = book ? book.title : "Book";
 
@@ -1011,7 +1273,7 @@
                 else if (endP > 0) pagesRead = endP;
 
                 const durationMins = Math.max(1, Math.round(live.elapsedSeconds / 60));
-                const notes = notesInput.value.trim();
+                const notes = notesInput ? notesInput.value.trim() : "";
 
                 const newSession = {
                     id: "act-" + Date.now(),
@@ -1027,7 +1289,6 @@
 
                 state.activities.push(newSession);
 
-                // Save to local storage & Cloudflare
                 try {
                     localStorage.setItem("books_reading_activity", JSON.stringify(state.activities));
                     if (window.cfClient) {
@@ -1037,19 +1298,72 @@
                     }
                 } catch (_) {}
 
-                // Reset timer
                 live.active = false;
                 live.paused = false;
                 live.elapsedSeconds = 0;
 
-                // Refresh all visualizations immediately
+                renderAll();
+            });
+        }
+
+        // Manual log without timer
+        if (manualLogBtn) {
+            manualLogBtn.addEventListener("click", async () => {
+                const bookId = bookSelect.value;
+                if (!bookId) {
+                    if (feedback) feedback.textContent = "Please pick a book first!";
+                    return;
+                }
+                if (!validatePages()) return;
+
+                const manualMins = Number(manualMinutesInput?.value) || 0;
+                if (manualMins <= 0) {
+                    if (feedback) feedback.textContent = "Please enter minutes read (e.g. 30).";
+                    return;
+                }
+
+                manualLogBtn.disabled = true;
+                const book = state.books.find(b => b.id === bookId);
+                const bookTitle = book ? book.title : "Book";
+
+                const startP = Number(startPageInput.value) || 0;
+                const endP = Number(endPageInput.value) || 0;
+                let pagesRead = 0;
+                if (endP > startP) pagesRead = endP - startP;
+                else if (endP > 0) pagesRead = endP;
+
+                const notes = notesInput ? notesInput.value.trim() : "";
+
+                const newSession = {
+                    id: "act-" + Date.now(),
+                    date: toDateString(new Date()),
+                    book_id: bookId,
+                    book_title: bookTitle,
+                    minutes: manualMins,
+                    start_page: startP || undefined,
+                    end_page: endP || undefined,
+                    pages: pagesRead,
+                    notes: notes
+                };
+
+                state.activities.push(newSession);
+
+                try {
+                    localStorage.setItem("books_reading_activity", JSON.stringify(state.activities));
+                    if (window.cfClient) {
+                        const cloudState = await window.cfClient.getState().catch(() => ({}));
+                        cloudState.reading_activity = state.activities;
+                        await window.cfClient.saveState(cloudState).catch(() => {});
+                    }
+                } catch (_) {}
+
                 renderAll();
             });
         }
     }
 
     /* ==============================================================
-       EXISTING FEATURES PRESERVED & ENHANCED
+       SECTION 1: READING OVERVIEW & ANNUAL CHALLENGE
        ============================================================== */
 
     function renderStreakDashboard() {
@@ -1081,6 +1395,89 @@
             </div>
         `;
     }
+
+    function renderReadingGoal() {
+        const container = document.getElementById("bookChallengeWidget");
+        if (!container) return;
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const targetGoal = (state.goals && state.goals[year]) ? Number(state.goals[year].target) : 12;
+
+        const completed = state.books.filter(b => {
+            const norm = normalizeStatus(b.status);
+            if (norm !== "read") return false;
+            const fin = toDateString(b.date_finished || b.created_at);
+            return fin && fin.startsWith(String(year));
+        }).length;
+
+        const pct = targetGoal > 0 ? Math.min(100, Math.round((completed / targetGoal) * 100)) : 0;
+        const remaining = Math.max(0, targetGoal - completed);
+
+        const endOfYear = new Date(year, 11, 31);
+        const daysLeft = Math.max(0, Math.ceil((endOfYear.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+
+        container.innerHTML = `
+            <div class="challenge-card">
+                <div class="challenge-header">
+                    <div class="challenge-title-group">
+                        <span class="challenge-badge">🎯 ${year} Reading Challenge</span>
+                        <h3 class="challenge-heading">
+                            <strong>${completed}</strong> of <strong>${targetGoal}</strong> books completed
+                        </h3>
+                    </div>
+                    <button type="button" class="challenge-edit-btn" id="editGoalBtn" aria-label="Edit reading goal">
+                        ⚙️ Goal (${targetGoal})
+                    </button>
+                </div>
+
+                <div class="challenge-progress-bar">
+                    <div class="challenge-progress-fill" style="width: ${pct}%;"></div>
+                </div>
+
+                <div class="challenge-meta-row">
+                    <span class="challenge-pct">${pct}% completed</span>
+                    <span class="challenge-rem">${remaining > 0 ? `${remaining} books to go` : "🎉 Goal accomplished!"}</span>
+                    <span class="challenge-days">${daysLeft} days left in ${year}</span>
+                </div>
+            </div>
+        `;
+
+        document.getElementById("editGoalBtn")?.addEventListener("click", promptEditGoal);
+    }
+
+    async function promptEditGoal() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const currentTarget = (state.goals && state.goals[year]) ? state.goals[year].target : 12;
+
+        const input = window.prompt(`Set your ${year} Annual Reading Challenge Goal:`, currentTarget);
+        if (input === null) return;
+
+        const num = parseInt(input, 10);
+        if (isNaN(num) || num <= 0) {
+            window.alert("Please enter a valid positive number for your goal.");
+            return;
+        }
+
+        if (!state.goals) state.goals = {};
+        state.goals[year] = { target: num };
+
+        try {
+            localStorage.setItem("books_reading_goals", JSON.stringify(state.goals));
+            if (window.cfClient) {
+                const cloudState = await window.cfClient.getState().catch(() => ({}));
+                cloudState.reading_goals = state.goals;
+                await window.cfClient.saveState(cloudState).catch(() => {});
+            }
+        } catch (_) {}
+
+        renderReadingGoal();
+    }
+
+    /* ==============================================================
+       FEATURE: INTERACTIVE 7-COLUMN CALENDAR
+       ============================================================== */
 
     function renderCalendar() {
         const container = document.getElementById("bookCalendarWidget");
@@ -1240,7 +1637,7 @@
 
         const details = sessions.map(s => {
             const b = state.books.find(x => x.id === s.bookId);
-            const bookTitle = b ? `"${escapeHtml(b.title)}"` : "a book";
+            const bookTitle = b ? `"${escapeHtml(b.title)}"` : (s.bookTitle ? `"${escapeHtml(s.bookTitle)}"` : "a book");
             let action = "Read";
             if (s.type === "finished") action = "Finished";
             if (s.type === "started") action = "Started";
@@ -1262,14 +1659,24 @@
         `;
     }
 
+    /* ==============================================================
+       FEATURE: MONTHLY READING ACTIVITY BREAKDOWN & INSPECTOR
+       ============================================================== */
+
     function renderMonthlyActivity() {
         const container = document.getElementById("bookMonthlyWidget");
         if (!container) return;
 
         const y = state.calendarYear;
-        const monthlyCounts = Array(12).fill(0);
-        const monthlyBooks = Array.from({ length: 12 }, () => []);
+        const mode = state.monthlyMode; // 'books' | 'pages' | 'time'
 
+        // Aggregate monthly metrics for the year
+        const monthlyCompletedBooks = Array.from({ length: 12 }, () => []);
+        const monthlyPages = Array(12).fill(0);
+        const monthlyMinutes = Array(12).fill(0);
+        const monthlyActiveDays = Array.from({ length: 12 }, () => new Set());
+
+        // From completed books
         state.books.forEach(b => {
             const norm = normalizeStatus(b.status);
             if (norm !== "read") return;
@@ -1278,55 +1685,187 @@
 
             const mIdx = parseInt(fin.split("-")[1], 10) - 1;
             if (mIdx >= 0 && mIdx < 12) {
-                monthlyCounts[mIdx]++;
-                monthlyBooks[mIdx].push(b);
+                monthlyCompletedBooks[mIdx].push(b);
+                monthlyActiveDays[mIdx].add(fin);
+                // If book has pages and no duplicate sessions, count pages
+                const hasSess = state.activities.some(s => s.book_id === b.id && toDateString(s.date).startsWith(`${y}-${String(mIdx + 1).padStart(2, "0")}`));
+                if (!hasSess && b.pages) {
+                    monthlyPages[mIdx] += Number(b.pages) || 0;
+                }
             }
         });
 
-        const maxCount = Math.max(1, ...monthlyCounts);
-        const totalYearCompleted = monthlyCounts.reduce((a, b) => a + b, 0);
+        // From activity sessions
+        state.activities.forEach(act => {
+            if (!act || !act.date) return;
+            const d = toDateString(act.date);
+            if (!d || !d.startsWith(`${y}-`)) return;
+
+            const mIdx = parseInt(d.split("-")[1], 10) - 1;
+            if (mIdx >= 0 && mIdx < 12) {
+                monthlyPages[mIdx] += Number(act.pages) || 0;
+                monthlyMinutes[mIdx] += Number(act.minutes) || 0;
+                monthlyActiveDays[mIdx].add(d);
+            }
+        });
+
+        // Determine values based on active mode
+        let values = [];
+        let maxVal = 1;
+        let totalYearCompleted = monthlyCompletedBooks.reduce((a, b) => a + b.length, 0);
+        let totalYearPages = monthlyPages.reduce((a, b) => a + b, 0);
+        let totalYearMinutes = monthlyMinutes.reduce((a, b) => a + b, 0);
+
+        if (mode === "pages") {
+            values = monthlyPages;
+            maxVal = Math.max(1, ...values);
+        } else if (mode === "time") {
+            values = monthlyMinutes;
+            maxVal = Math.max(1, ...values);
+        } else {
+            // books
+            values = monthlyCompletedBooks.map(arr => arr.length);
+            maxVal = Math.max(1, ...values);
+        }
+
+        let subText = `${totalYearCompleted} books completed in ${y}`;
+        if (mode === "pages") subText = `${totalYearPages.toLocaleString()} pages read in ${y}`;
+        if (mode === "time") subText = `${formatDuration(totalYearMinutes)} spent reading in ${y}`;
 
         let html = `
             <div class="monthly-header">
-                <div>
+                <div class="monthly-title-group">
                     <h3 class="monthly-title">Monthly Reading Activity — ${y}</h3>
-                    <span class="monthly-sub">${totalYearCompleted} books completed in ${y}</span>
+                    <span class="monthly-sub">${subText}</span>
                 </div>
-                <div class="monthly-year-tag">${y} Activity</div>
+                <div class="monthly-metric-group">
+                    <button type="button" class="monthly-metric-btn ${mode === "books" ? "active" : ""}" data-mode="books">📚 Books</button>
+                    <button type="button" class="monthly-metric-btn ${mode === "pages" ? "active" : ""}" data-mode="pages">📄 Pages</button>
+                    <button type="button" class="monthly-metric-btn ${mode === "time" ? "active" : ""}" data-mode="time">⏱️ Time</button>
+                </div>
             </div>
             <div class="monthly-bars-list">
         `;
 
         for (let i = 0; i < 12; i++) {
-            const count = monthlyCounts[i];
-            const books = monthlyBooks[i];
-            const pct = Math.round((count / maxCount) * 100);
+            const val = values[i];
+            const books = monthlyCompletedBooks[i];
+            const pct = Math.round((val / maxVal) * 100);
             const mName = MONTH_SHORT[i];
+            const isSelected = state.selectedMonth === i;
 
             const thumbnails = books.slice(0, 4).map(b => `
                 <img src="${escapeHtml(b.image_url)}" class="monthly-thumb" title="${escapeHtml(b.title)}" alt="${escapeHtml(b.title)}">
             `).join("");
 
+            let endLabel = "—";
+            if (val > 0) {
+                if (mode === "pages") endLabel = `${val}p`;
+                else if (mode === "time") endLabel = formatDuration(val);
+                else endLabel = `${val} book${val === 1 ? "" : "s"}`;
+            }
+
             html += `
-                <div class="monthly-row ${count > 0 ? "has-books" : ""}" data-month="${i}">
+                <div class="monthly-row ${val > 0 ? "has-books" : ""} ${isSelected ? "is-selected" : ""}" data-month="${i}" role="button" tabindex="0" aria-label="${MONTH_NAMES[i]} activity">
                     <span class="monthly-month-name">${mName}</span>
                     <div class="monthly-bar-track">
-                        <div class="monthly-bar-fill" style="width: ${count > 0 ? Math.max(8, pct) : 0}%;">
-                            ${count > 0 ? `<span class="monthly-bar-count">${count}</span>` : ""}
+                        <div class="monthly-bar-fill" style="width: ${val > 0 ? Math.max(8, pct) : 0}%;">
+                            ${val > 0 ? `<span class="monthly-bar-count">${mode === "time" ? formatDuration(val) : val}</span>` : ""}
                         </div>
                     </div>
                     <div class="monthly-covers-wrap">
                         ${thumbnails}
                         ${books.length > 4 ? `<span class="monthly-more">+${books.length - 4}</span>` : ""}
                     </div>
-                    <span class="monthly-end-count">${count > 0 ? `${count} book${count === 1 ? "" : "s"}` : "—"}</span>
+                    <span class="monthly-end-count">${endLabel}</span>
                 </div>
             `;
         }
 
         html += `</div>`;
+
+        // Monthly Inspector Drawer if a month is selected
+        if (state.selectedMonth !== null) {
+            const sM = state.selectedMonth;
+            const selBooks = monthlyCompletedBooks[sM];
+            const selPages = monthlyPages[sM];
+            const selMins = monthlyMinutes[sM];
+            const selDays = monthlyActiveDays[sM].size;
+
+            let booksListHtml = "";
+            if (selBooks.length > 0) {
+                booksListHtml = selBooks.map(b => `
+                    <div class="month-book-entry">
+                        <img src="${escapeHtml(b.image_url)}" alt="${escapeHtml(b.title)}">
+                        <div>
+                            <strong>${escapeHtml(b.title)}</strong> by ${escapeHtml(b.author || "Unknown")}
+                            ${b.pages ? ` (${b.pages}p)` : ""}
+                        </div>
+                    </div>
+                `).join("");
+            } else {
+                booksListHtml = `<span style="font-size: 11.5px; color: #777; font-style: italic;">No books completed this month.</span>`;
+            }
+
+            html += `
+                <div class="monthly-detail-drawer">
+                    <div class="month-detail-card">
+                        <div class="month-detail-header">
+                            <h4 class="month-detail-title">📖 ${MONTH_NAMES[sM]} ${y} Overview</h4>
+                            <button type="button" class="month-sync-cal-btn" id="monthSyncCalBtn">📅 View in Calendar</button>
+                        </div>
+                        <div class="month-detail-stats-row">
+                            <span class="month-stat-chip">📅 ${selDays} active days</span>
+                            <span class="month-stat-chip">📄 ${selPages} pages read</span>
+                            <span class="month-stat-chip">⏱️ ${formatDuration(selMins)} duration</span>
+                            <span class="month-stat-chip">📚 ${selBooks.length} finished</span>
+                        </div>
+                        <div class="month-books-list">
+                            ${booksListHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         container.innerHTML = html;
+
+        // Wire metric selector buttons
+        container.querySelectorAll(".monthly-metric-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                state.monthlyMode = btn.dataset.mode;
+                renderMonthlyActivity();
+            });
+        });
+
+        // Wire month rows click to inspect
+        container.querySelectorAll(".monthly-row").forEach(row => {
+            row.addEventListener("click", () => {
+                const mIdx = parseInt(row.dataset.month, 10);
+                if (state.selectedMonth === mIdx) {
+                    state.selectedMonth = null;
+                } else {
+                    state.selectedMonth = mIdx;
+                }
+                renderMonthlyActivity();
+            });
+        });
+
+        // Wire "View in Calendar" button
+        document.getElementById("monthSyncCalBtn")?.addEventListener("click", () => {
+            if (state.selectedMonth !== null) {
+                state.calendarMonth = state.selectedMonth;
+                state.calendarYear = y;
+                renderCalendar();
+                document.getElementById("bookCalendarWidget")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+        });
     }
+
+    /* ==============================================================
+       FEATURE: SHELVES & SEARCH BAR
+       ============================================================== */
 
     function renderShelves() {
         const tabsContainer = document.getElementById("bookShelfTabs");
@@ -1423,84 +1962,9 @@
         });
     }
 
-    function renderReadingGoal() {
-        const container = document.getElementById("bookChallengeWidget");
-        if (!container) return;
-
-        const now = new Date();
-        const year = now.getFullYear();
-        const targetGoal = (state.goals && state.goals[year]) ? Number(state.goals[year].target) : 12;
-
-        const completed = state.books.filter(b => {
-            const norm = normalizeStatus(b.status);
-            if (norm !== "read") return false;
-            const fin = toDateString(b.date_finished || b.created_at);
-            return fin && fin.startsWith(String(year));
-        }).length;
-
-        const pct = targetGoal > 0 ? Math.min(100, Math.round((completed / targetGoal) * 100)) : 0;
-        const remaining = Math.max(0, targetGoal - completed);
-
-        const endOfYear = new Date(year, 11, 31);
-        const daysLeft = Math.max(0, Math.ceil((endOfYear.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-
-        container.innerHTML = `
-            <div class="challenge-card">
-                <div class="challenge-header">
-                    <div class="challenge-title-group">
-                        <span class="challenge-badge">🎯 ${year} Reading Challenge</span>
-                        <h3 class="challenge-heading">
-                            <strong>${completed}</strong> of <strong>${targetGoal}</strong> books completed
-                        </h3>
-                    </div>
-                    <button type="button" class="challenge-edit-btn" id="editGoalBtn" aria-label="Edit reading goal">
-                        ⚙️ Goal (${targetGoal})
-                    </button>
-                </div>
-
-                <div class="challenge-progress-bar">
-                    <div class="challenge-progress-fill" style="width: ${pct}%;"></div>
-                </div>
-
-                <div class="challenge-meta-row">
-                    <span class="challenge-pct">${pct}% completed</span>
-                    <span class="challenge-rem">${remaining > 0 ? `${remaining} books to go` : "🎉 Goal accomplished!"}</span>
-                    <span class="challenge-days">${daysLeft} days left in ${year}</span>
-                </div>
-            </div>
-        `;
-
-        document.getElementById("editGoalBtn")?.addEventListener("click", promptEditGoal);
-    }
-
-    async function promptEditGoal() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const currentTarget = (state.goals && state.goals[year]) ? state.goals[year].target : 12;
-
-        const input = window.prompt(`Set your ${year} Annual Reading Challenge Goal:`, currentTarget);
-        if (input === null) return;
-
-        const num = parseInt(input, 10);
-        if (isNaN(num) || num <= 0) {
-            window.alert("Please enter a valid positive number for your goal.");
-            return;
-        }
-
-        if (!state.goals) state.goals = {};
-        state.goals[year] = { target: num };
-
-        try {
-            localStorage.setItem("books_reading_goals", JSON.stringify(state.goals));
-            if (window.cfClient) {
-                const cloudState = await window.cfClient.getState().catch(() => ({}));
-                cloudState.reading_goals = state.goals;
-                await window.cfClient.saveState(cloudState).catch(() => {});
-            }
-        } catch (_) {}
-
-        renderReadingGoal();
-    }
+    /* ==============================================================
+       FEATURE: BOOK DETAIL & HISTORY MODAL
+       ============================================================== */
 
     function setupBookDetailModal() {
         const backdrop = document.getElementById("bookModalBackdrop");
@@ -1558,7 +2022,7 @@
                 timelineEl.innerHTML = bookActs.map(a => `
                     <div class="timeline-item">
                         <span class="timeline-date">${escapeHtml(a.date)}</span>
-                        <span class="timeline-desc">${a.pages ? `${a.pages} pages read` : "Reading session"}${a.notes ? ` — "${escapeHtml(a.notes)}"` : ""}</span>
+                        <span class="timeline-desc">${a.pages ? `${a.pages} pages read` : "Reading session"}${a.minutes ? ` (${a.minutes}m)` : ""}${a.notes ? ` — "${escapeHtml(a.notes)}"` : ""}</span>
                     </div>
                 `).join("");
             }
@@ -1623,14 +2087,25 @@
         let localGoals = {};
         try {
             localOverrides = JSON.parse(localStorage.getItem("books_overrides") || "{}");
-            localActivities = JSON.parse(localStorage.getItem("books_reading_activity") || "[]");
+            const rawAct = localStorage.getItem("books_reading_activity");
+            if (rawAct) localActivities = JSON.parse(rawAct);
             localGoals = JSON.parse(localStorage.getItem("books_reading_goals") || "{}");
         } catch (_) {}
 
         state.overrides = { ...CATALOG_DEFAULTS, ...localOverrides, ...(cloudState.overrides || {}) };
-        state.activities = (cloudState.reading_activity && cloudState.reading_activity.length > 0)
-            ? cloudState.reading_activity
-            : localActivities;
+
+        // Guarantee authentic seed activities if local storage is fresh
+        if (cloudState.reading_activity && cloudState.reading_activity.length > 0) {
+            state.activities = cloudState.reading_activity;
+        } else if (localActivities.length > 0) {
+            state.activities = localActivities;
+        } else {
+            state.activities = [...DEFAULT_ACTIVITIES];
+            try {
+                localStorage.setItem("books_reading_activity", JSON.stringify(state.activities));
+            } catch (_) {}
+        }
+
         state.goals = (cloudState.reading_goals && Object.keys(cloudState.reading_goals).length > 0)
             ? cloudState.reading_goals
             : localGoals;

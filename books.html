@@ -9,9 +9,9 @@
     <title>Books</title>
 
     <!-- Global Base Stylesheet with Cache Buster -->
-    <link rel="stylesheet" href="style.css?v=20261026-v4">
+    <link rel="stylesheet" href="style.css?v=20261026-v5">
     <!-- Dedicated Books Stylesheet with Cache Buster -->
-    <link rel="stylesheet" href="books.css?v=20261026-v4">
+    <link rel="stylesheet" href="books.css?v=20261026-v5">
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -81,32 +81,50 @@
             margin: 0 !important;
         }
 
-        /* Reading Challenge Card */
-        .challenge-card {
+        /* Section 1: Reading Overview Card */
+        .reading-overview-section {
             background: #FFFDF8 !important;
             border: 3px solid #2B2926 !important;
             border-radius: 20px !important;
-            padding: 22px 26px !important;
+            padding: 24px 26px !important;
             box-shadow: 6px 6px #2B2926 !important;
+            box-sizing: border-box !important;
+            margin-bottom: 32px !important;
+            width: 100% !important;
+        }
+
+        .overview-divider {
+            height: 2px !important;
+            background: #EFE9DB !important;
+            margin: 20px 0 !important;
+            border: none !important;
+        }
+
+        .challenge-card {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
             box-sizing: border-box !important;
         }
 
-        /* Streak Dashboard - 4 Equal Columns */
+        /* Streak Dashboard inside Overview - 4 Equal Columns */
         .book-streak-dashboard {
             display: grid !important;
             grid-template-columns: repeat(4, 1fr) !important;
-            gap: 16px !important;
-            margin: 0 0 32px !important;
+            gap: 14px !important;
+            margin: 0 !important;
             width: 100% !important;
             box-sizing: border-box !important;
         }
 
         .streak-card {
-            background: #FFFDF8 !important;
-            border: 3px solid #2B2926 !important;
-            border-radius: 16px !important;
-            padding: 18px 16px !important;
-            box-shadow: 5px 5px #2B2926 !important;
+            background: #F7F2E9 !important;
+            border: 2px solid #2B2926 !important;
+            border-radius: 14px !important;
+            padding: 14px 14px !important;
+            box-shadow: 3px 3px #2B2926 !important;
             box-sizing: border-box !important;
         }
 
@@ -241,8 +259,16 @@
             .page-title h1 {
                 font-size: 32px !important;
             }
+            .reading-overview-section {
+                padding: 18px 14px !important;
+                box-shadow: 4px 4px #2B2926 !important;
+                margin-bottom: 24px !important;
+            }
+            .overview-divider {
+                margin: 16px 0 14px !important;
+            }
             .challenge-card {
-                padding: 16px 14px !important;
+                padding: 0 !important;
             }
             .challenge-header {
                 flex-direction: column !important;
@@ -254,8 +280,12 @@
                 align-items: flex-start !important;
                 gap: 4px !important;
             }
+            .book-streak-dashboard {
+                gap: 8px !important;
+            }
             .streak-card {
-                padding: 14px 12px !important;
+                padding: 10px 8px !important;
+                box-shadow: 2px 2px #2B2926 !important;
             }
             .analytics-card {
                 padding: 18px 14px !important;
@@ -311,6 +341,11 @@
             .tracker-page-inputs {
                 width: 100% !important;
             }
+            .tracker-manual-row {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 6px !important;
+            }
             .book-calendar-widget,
             .book-monthly-widget {
                 padding: 16px 12px !important;
@@ -339,7 +374,17 @@
 
         @media (max-width: 375px) {
             .books-container {
-                padding: 16px 10px 40px !important;
+                padding: 16px 8px 40px !important;
+            }
+            .reading-overview-section {
+                padding: 14px 10px !important;
+                box-shadow: 3px 3px #2B2926 !important;
+            }
+            .book-streak-dashboard {
+                gap: 6px !important;
+            }
+            .streak-card {
+                padding: 8px 6px !important;
             }
             .cal-days {
                 gap: 2px !important;
@@ -384,60 +429,60 @@
 
 
         <!-- ==========================================
-             FEATURE 5: READING GOAL & CHALLENGE WIDGET
+             SECTION 1: READING OVERVIEW & ANNUAL CHALLENGE
         =========================================== -->
-        <div id="bookChallengeWidget" class="book-challenge-widget">
-            <div class="challenge-card">
-                <div class="challenge-header">
-                    <div class="challenge-title-group">
-                        <span class="challenge-badge">🎯 2026 Reading Challenge</span>
-                        <h3 class="challenge-heading">
-                            <strong>4</strong> of <strong>12</strong> books completed
-                        </h3>
+        <section id="readingOverviewSection" class="reading-overview-section">
+            <div id="bookChallengeWidget" class="book-challenge-widget">
+                <div class="challenge-card">
+                    <div class="challenge-header">
+                        <div class="challenge-title-group">
+                            <span class="challenge-badge">🎯 2026 Reading Challenge</span>
+                            <h3 class="challenge-heading">
+                                <strong>4</strong> of <strong>12</strong> books completed
+                            </h3>
+                        </div>
+                        <button type="button" class="challenge-edit-btn" id="editGoalBtn" aria-label="Edit reading goal">
+                            ⚙️ Goal (12)
+                        </button>
                     </div>
-                    <button type="button" class="challenge-edit-btn" id="editGoalBtn" aria-label="Edit reading goal">
-                        ⚙️ Goal (12)
-                    </button>
-                </div>
 
-                <div class="challenge-progress-bar">
-                    <div class="challenge-progress-fill" style="width: 33%;"></div>
-                </div>
+                    <div class="challenge-progress-bar">
+                        <div class="challenge-progress-fill" style="width: 33%;"></div>
+                    </div>
 
-                <div class="challenge-meta-row">
-                    <span class="challenge-pct">33% completed</span>
-                    <span class="challenge-rem">8 books to go</span>
-                    <span class="challenge-days">66 days left in 2026</span>
+                    <div class="challenge-meta-row">
+                        <span class="challenge-pct">33% completed</span>
+                        <span class="challenge-rem">8 books to go</span>
+                        <span class="challenge-days">66 days left in 2026</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
+            <div class="overview-divider"></div>
 
-        <!-- ==========================================
-             FEATURE 1: READING STREAK DASHBOARD
-        =========================================== -->
-        <div id="bookStreakDashboard" class="book-streak-dashboard">
-            <div class="streak-card highlight-streak">
-                <div class="streak-icon-pill">🔥 Current</div>
-                <div class="streak-big-val">5 <span class="streak-unit">days</span></div>
-                <div class="streak-sub-label">Current Reading Streak</div>
+            <div id="bookStreakDashboard" class="book-streak-dashboard">
+                <div class="streak-card highlight-streak">
+                    <div class="streak-icon-pill">🔥 Current</div>
+                    <div class="streak-big-val">5 <span class="streak-unit">days</span></div>
+                    <div class="streak-sub-label">Current Reading Streak</div>
+                </div>
+                <div class="streak-card">
+                    <div class="streak-icon-pill">⚡ Best (2026)</div>
+                    <div class="streak-big-val">12 <span class="streak-unit">days</span></div>
+                    <div class="streak-sub-label">Longest Streak this Year</div>
+                </div>
+                <div class="streak-card">
+                    <div class="streak-icon-pill">📅 Total Days</div>
+                    <div class="streak-big-val">42 <span class="streak-unit">days</span></div>
+                    <div class="streak-sub-label">Days Read in 2026</div>
+                </div>
+                <div class="streak-card">
+                    <div class="streak-icon-pill">📚 Finished</div>
+                    <div class="streak-big-val">4 <span class="streak-unit">books</span></div>
+                    <div class="streak-sub-label">Books Read in 2026</div>
+                </div>
             </div>
-            <div class="streak-card">
-                <div class="streak-icon-pill">⚡ Best (2026)</div>
-                <div class="streak-big-val">12 <span class="streak-unit">days</span></div>
-                <div class="streak-sub-label">Longest Streak this Year</div>
-            </div>
-            <div class="streak-card">
-                <div class="streak-icon-pill">📅 Total Days</div>
-                <div class="streak-big-val">42 <span class="streak-unit">days</span></div>
-                <div class="streak-sub-label">Days Read in 2026</div>
-            </div>
-            <div class="streak-card">
-                <div class="streak-icon-pill">📚 Finished</div>
-                <div class="streak-big-val">4 <span class="streak-unit">books</span></div>
-                <div class="streak-sub-label">Books Read in 2026</div>
-            </div>
-        </div>
+        </section>
 
 
         <!-- ==========================================
@@ -733,10 +778,10 @@
     </div>
 
 
-    <script src="cloudflare-config.js?v=20261026-v4"></script>
-    <script src="cloudflare-client.js?v=20261026-v4"></script>
-    <script src="content-loader.js?v=20261026-v4"></script>
-    <script src="books.js?v=20261026-v4"></script>
+    <script src="cloudflare-config.js?v=20261026-v5"></script>
+    <script src="cloudflare-client.js?v=20261026-v5"></script>
+    <script src="content-loader.js?v=20261026-v5"></script>
+    <script src="books.js?v=20261026-v5"></script>
 
 </body>
 
