@@ -503,22 +503,7 @@ export default {
             // -------------------------------------------------------------
             // 5b. Reading Security Settings & PIN Verification: /api/reading-security
             // -------------------------------------------------------------
-            if (path === "/api/reading-security" && request.method === "GET") {
-                const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'reading_security'").first();
-                let enabled = false;
-                if (row && row.value) {
-                    try {
-                        const parsed = JSON.parse(row.value);
-                        enabled = Boolean(parsed.enabled);
-                    } catch (_) {}
-                }
-                return json({ enabled });
-            }
-
-            if (path === "/api/reading-security/verify" && request.method === "POST") {
-                const body = await request.json().catch(() => ({}));
-                const pin = String(body.pin || "").trim();
-
+            async function verifyReadingSecurityPIN(pin, env) {
                 const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'reading_security'").first();
                 let secData = { enabled: false, pin_hash: "", failed_attempts: 0, locked_until: 0 };
                 if (row && row.value) {
@@ -529,21 +514,22 @@ export default {
 
                 // If security is disabled, verification automatically passes
                 if (!secData.enabled) {
-                    return json({ success: true, verified: true, protection: "disabled" });
+                    return { ok: true, protection: "disabled" };
                 }
 
                 // Check rate limiting / lockout
                 const now = Date.now();
                 if (secData.locked_until && secData.locked_until > now) {
                     const remainingSeconds = Math.ceil((secData.locked_until - now) / 1000);
-                    return error(`Too many failed attempts. Please wait ${remainingSeconds}s before trying again.`, 429);
+                    return { ok: false, status: 429, error: `Too many failed attempts. Reading tracker locked for ${remainingSeconds}s.` };
                 }
 
-                if (!/^\d{5}$/.test(pin)) {
-                    return error("PIN must contain exactly 5 numeric digits.", 400);
+                const cleanPin = String(pin || "").trim();
+                if (!/^\d{5}$/.test(cleanPin)) {
+                    return { ok: false, status: 400, error: "PIN must contain exactly 5 numeric digits." };
                 }
 
-                const hashedAttempt = await sha256("anand_reading_pin_salt_v1_" + pin);
+                const hashedAttempt = await sha256("anand_reading_pin_salt_v1_" + cleanPin);
                 if (secData.pin_hash && secData.pin_hash === hashedAttempt) {
                     // Reset failed attempts upon successful verification
                     if (secData.failed_attempts > 0 || secData.locked_until > 0) {
@@ -553,7 +539,7 @@ export default {
                             "INSERT INTO site_state (key, value, updated_at) VALUES ('reading_security', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
                         ).bind(JSON.stringify(secData)).run();
                     }
-                    return json({ success: true, verified: true });
+                    return { ok: true, protection: "enabled" };
                 }
 
                 // Failed attempt
@@ -574,7 +560,111 @@ export default {
                     "INSERT INTO site_state (key, value, updated_at) VALUES ('reading_security', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
                 ).bind(JSON.stringify(secData)).run();
 
-                return error(errorMsg, 401);
+                return { ok: false, status: 401, error: errorMsg };
+            }
+
+            if (path === "/api/reading-security" && request.method === "GET") {
+                const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'reading_security'").first();
+                let enabled = false;
+                if (row && row.value) {
+                    try {
+                        const parsed = JSON.parse(row.value);
+                        enabled = Boolean(parsed.enabled);
+                    } catch (_) {}
+                }
+                return json({ enabled });
+            }
+
+            if (path === "/api/reading-security/verify" && request.method === "POST") {
+                const body = await request.json().catch(() => ({}));
+                const pin = String(body.pin || "").trim();
+                const check = await verifyReadingSecurityPIN(pin, env);
+                if (!check.ok) {
+                    return error(check.error, check.status || 401);
+                }
+                return json({ success: true, verified: true, protection: check.protection });
+            }
+
+            // -------------------------------------------------------------
+            // 5c. Reading Sessions & Activity Logging: /api/reading-sessions
+            // -------------------------------------------------------------
+            if (path === "/api/reading-sessions") {
+                if (request.method === "GET") {
+                    const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'site_overrides'").first();
+                    let readingActivity = [];
+                    if (row && row.value) {
+                        try {
+                            const parsed = JSON.parse(row.value);
+                            if (Array.isArray(parsed.reading_activity)) {
+                                readingActivity = parsed.reading_activity;
+                            }
+                        } catch (_) {}
+                    }
+                    return json(readingActivity);
+                }
+
+                if (request.method === "POST") {
+                    // Check authentication: Admin session OR Reading Security PIN
+                    const auth = await verifyAdminSession(request, env);
+                    let authorized = auth.ok;
+
+                    const body = await request.json().catch(() => ({}));
+                    const pin = request.headers.get("X-Reading-PIN") || body.pin || "";
+
+                    if (!authorized) {
+                        const pinCheck = await verifyReadingSecurityPIN(pin, env);
+                        if (!pinCheck.ok) {
+                            return error(pinCheck.error, pinCheck.status || 401);
+                        }
+                    }
+
+                    // Validate session payload
+                    const session = body.session || body;
+                    if (!session || typeof session !== "object") {
+                        return error("Invalid reading session payload.", 400);
+                    }
+
+                    const minutes = Number(session.minutes);
+                    if (!Number.isFinite(minutes) || minutes <= 0) {
+                        return error("Valid duration in minutes is required.", 400);
+                    }
+
+                    const newSession = {
+                        id: session.id || ("act-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6)),
+                        date: session.date || new Date().toISOString().split("T")[0],
+                        book_id: session.book_id || "",
+                        book_title: session.book_title || "Book",
+                        minutes: Math.round(minutes),
+                        pages: Number(session.pages) || 0,
+                        start_page: session.start_page !== undefined ? Number(session.start_page) : undefined,
+                        end_page: session.end_page !== undefined ? Number(session.end_page) : undefined,
+                        notes: String(session.notes || "").trim()
+                    };
+
+                    // Persist session into site_overrides in site_state
+                    const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'site_overrides'").first();
+                    let siteData = { deletedIds: [], overrides: {}, reading_activity: [] };
+                    if (row && row.value) {
+                        try {
+                            siteData = { ...siteData, ...JSON.parse(row.value) };
+                        } catch (_) {}
+                    }
+                    if (!Array.isArray(siteData.reading_activity)) {
+                        siteData.reading_activity = [];
+                    }
+
+                    // Prevent duplicate if session already exists
+                    const exists = siteData.reading_activity.some(a => a.id === newSession.id);
+                    if (!exists) {
+                        siteData.reading_activity.push(newSession);
+                    }
+
+                    await env.DB.prepare(
+                        "INSERT INTO site_state (key, value, updated_at) VALUES ('site_overrides', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                    ).bind(JSON.stringify(siteData)).run();
+
+                    return json({ success: true, session: newSession }, 201);
+                }
             }
 
             if (path === "/api/reading-security/config" && (request.method === "POST" || request.method === "PUT")) {

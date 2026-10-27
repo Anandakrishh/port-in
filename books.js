@@ -1107,8 +1107,8 @@
             renderLiveSessionTracker();
         }
 
-        // Helper: prompt for 5-digit PIN
-        function promptForReadingPin(onVerified) {
+        // Helper: prompt for 5-digit PIN (reusable for timer and offline logging)
+        function promptForReadingPin(onVerified, onCancel) {
             const modal = document.getElementById("readingPinModal");
             const backdrop = document.getElementById("readingPinBackdrop");
             const closeBtn = document.getElementById("readingPinCloseBtn");
@@ -1125,25 +1125,30 @@
 
             let isOpen = true;
 
-            const closeModal = () => {
+            const closeModal = (wasCancelled = false) => {
                 if (!isOpen) return;
                 isOpen = false;
                 modal.classList.remove("active");
                 modal.setAttribute("aria-hidden", "true");
                 document.body.style.overflow = "";
                 cleanup();
+                if (wasCancelled && typeof onCancel === "function") {
+                    onCancel();
+                }
             };
 
             const cleanup = () => {
-                if (closeBtn) closeBtn.removeEventListener("click", closeModal);
-                if (cancelBtn) cancelBtn.removeEventListener("click", closeModal);
-                if (backdrop) backdrop.removeEventListener("click", closeModal);
+                if (closeBtn) closeBtn.removeEventListener("click", handleClose);
+                if (cancelBtn) cancelBtn.removeEventListener("click", handleClose);
+                if (backdrop) backdrop.removeEventListener("click", handleClose);
                 document.removeEventListener("keydown", onKeyDown);
             };
 
+            const handleClose = () => closeModal(true);
+
             const onKeyDown = (e) => {
                 if (e.key === "Escape") {
-                    closeModal();
+                    closeModal(true);
                 }
             };
 
@@ -1168,9 +1173,9 @@
                 if (pinInput) pinInput.focus();
             }, 60);
 
-            if (closeBtn) closeBtn.addEventListener("click", closeModal);
-            if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
-            if (backdrop) backdrop.addEventListener("click", closeModal);
+            if (closeBtn) closeBtn.addEventListener("click", handleClose);
+            if (cancelBtn) cancelBtn.addEventListener("click", handleClose);
+            if (backdrop) backdrop.addEventListener("click", handleClose);
             document.addEventListener("keydown", onKeyDown);
 
             if (pinInput && !pinInput.dataset.wired) {
@@ -1209,8 +1214,8 @@
                     if (window.cfClient && typeof window.cfClient.verifyReadingPin === "function") {
                         await window.cfClient.verifyReadingPin(pin);
                     }
-                    closeModal();
-                    if (typeof onVerified === "function") onVerified();
+                    closeModal(false);
+                    if (typeof onVerified === "function") onVerified(pin);
                 } catch (err) {
                     console.warn("PIN verification failed:", err);
                     if (verifyBtn) {
@@ -1232,12 +1237,12 @@
             if (form) form.onsubmit = onSubmit;
         }
 
-        // Start timer
+        // Start timer (PIN protected)
         if (startBtn) {
             startBtn.addEventListener("click", async () => {
                 if (live.active) return; // Prevent repeated clicks
 
-                const bookId = bookSelect.value;
+                const bookId = bookSelect ? bookSelect.value : "";
                 if (!bookId) {
                     if (feedback) feedback.textContent = "Please pick a book first!";
                     return;
@@ -1258,10 +1263,14 @@
                 }
 
                 if (securityStatus && securityStatus.enabled) {
-                    promptForReadingPin(() => {
+                    promptForReadingPin((verifiedPin) => {
+                        live.verifiedPin = verifiedPin;
                         startLiveTimer(bookId);
+                    }, () => {
+                        if (startBtn) startBtn.disabled = false;
                     });
                 } else {
+                    live.verifiedPin = null;
                     startLiveTimer(bookId);
                 }
             });
@@ -1283,6 +1292,7 @@
                 live.active = false;
                 live.paused = false;
                 live.elapsedSeconds = 0;
+                live.verifiedPin = null;
                 updateTabLiveBadge();
                 renderLiveSessionTracker();
             });
@@ -1300,8 +1310,8 @@
                 const book = state.books.find(b => b.id === live.bookId);
                 const bookTitle = book ? book.title : "Book";
 
-                const startP = Number(startPageInput.value) || 0;
-                const endP = Number(endPageInput.value) || 0;
+                const startP = Number(startPageInput ? startPageInput.value : 0) || 0;
+                const endP = Number(endPageInput ? endPageInput.value : 0) || 0;
                 let pagesRead = 0;
                 if (endP > startP) pagesRead = endP - startP;
                 else if (endP > 0) pagesRead = endP;
@@ -1310,7 +1320,7 @@
                 const notes = notesInput ? notesInput.value.trim() : "";
 
                 const newSession = {
-                    id: "act-" + Date.now(),
+                    id: "act-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
                     date: toDateString(new Date()),
                     book_id: live.bookId,
                     book_title: bookTitle,
@@ -1321,11 +1331,15 @@
                     notes: notes
                 };
 
-                state.activities.push(newSession);
+                if (!state.activities.some(a => a.id === newSession.id)) {
+                    state.activities.push(newSession);
+                }
 
                 try {
                     localStorage.setItem("books_reading_activity", JSON.stringify(state.activities));
-                    if (window.cfClient) {
+                    if (window.cfClient && typeof window.cfClient.logReadingSession === "function") {
+                        await window.cfClient.logReadingSession(newSession, live.verifiedPin).catch(() => {});
+                    } else if (window.cfClient) {
                         const cloudState = await window.cfClient.getState().catch(() => ({}));
                         cloudState.reading_activity = state.activities;
                         await window.cfClient.saveState(cloudState).catch(() => {});
@@ -1335,15 +1349,20 @@
                 live.active = false;
                 live.paused = false;
                 live.elapsedSeconds = 0;
+                live.verifiedPin = null;
 
                 renderAll();
             });
         }
 
-        // Manual log without timer
+        // Manual log without timer (with identical PIN protection & duplicate submission prevention)
+        let isLoggingOffline = false;
+
         if (manualLogBtn) {
             manualLogBtn.addEventListener("click", async () => {
-                const bookId = bookSelect.value;
+                if (isLoggingOffline) return; // Prevent repeated clicks
+
+                const bookId = bookSelect ? bookSelect.value : "";
                 if (!bookId) {
                     if (feedback) feedback.textContent = "Please pick a book first!";
                     return;
@@ -1356,42 +1375,94 @@
                     return;
                 }
 
-                manualLogBtn.disabled = true;
-                const book = state.books.find(b => b.id === bookId);
-                const bookTitle = book ? book.title : "Book";
-
-                const startP = Number(startPageInput.value) || 0;
-                const endP = Number(endPageInput.value) || 0;
+                const startP = Number(startPageInput ? startPageInput.value : 0) || 0;
+                const endP = Number(endPageInput ? endPageInput.value : 0) || 0;
                 let pagesRead = 0;
                 if (endP > startP) pagesRead = endP - startP;
                 else if (endP > 0) pagesRead = endP;
 
                 const notes = notesInput ? notesInput.value.trim() : "";
+                const book = state.books.find(b => b.id === bookId);
+                const bookTitle = book ? book.title : "Book";
 
-                const newSession = {
-                    id: "act-" + Date.now(),
-                    date: toDateString(new Date()),
-                    book_id: bookId,
-                    book_title: bookTitle,
-                    minutes: manualMins,
-                    start_page: startP || undefined,
-                    end_page: endP || undefined,
-                    pages: pagesRead,
-                    notes: notes
+                // Function to execute the actual saving once authorized
+                const executeOfflineLog = async (verifiedPin) => {
+                    isLoggingOffline = true;
+                    if (manualLogBtn) {
+                        manualLogBtn.disabled = true;
+                        manualLogBtn.textContent = "Saving...";
+                    }
+
+                    const newSession = {
+                        id: "act-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
+                        date: toDateString(new Date()),
+                        book_id: bookId,
+                        book_title: bookTitle,
+                        minutes: manualMins,
+                        start_page: startP || undefined,
+                        end_page: endP || undefined,
+                        pages: pagesRead,
+                        notes: notes
+                    };
+
+                    // Prevent duplicate entry
+                    if (!state.activities.some(a => a.id === newSession.id)) {
+                        state.activities.push(newSession);
+                    }
+
+                    try {
+                        localStorage.setItem("books_reading_activity", JSON.stringify(state.activities));
+                        if (window.cfClient && typeof window.cfClient.logReadingSession === "function") {
+                            await window.cfClient.logReadingSession(newSession, verifiedPin).catch(err => {
+                                console.warn("Failed syncing offline session to Cloudflare:", err);
+                            });
+                        } else if (window.cfClient) {
+                            const cloudState = await window.cfClient.getState().catch(() => ({}));
+                            cloudState.reading_activity = state.activities;
+                            await window.cfClient.saveState(cloudState).catch(() => {});
+                        }
+                    } catch (e) {
+                        console.warn("Storage sync error:", e);
+                    }
+
+                    // Reset only inputs that belong to the logged session
+                    if (manualMinutesInput) manualMinutesInput.value = "";
+                    if (notesInput) notesInput.value = "";
+                    if (feedback) feedback.textContent = "";
+
+                    isLoggingOffline = false;
+                    renderAll();
                 };
 
-                state.activities.push(newSession);
-
+                // Check security status (reusing Admin-configured PIN)
+                manualLogBtn.disabled = true;
+                let securityStatus = { enabled: false };
                 try {
-                    localStorage.setItem("books_reading_activity", JSON.stringify(state.activities));
-                    if (window.cfClient) {
-                        const cloudState = await window.cfClient.getState().catch(() => ({}));
-                        cloudState.reading_activity = state.activities;
-                        await window.cfClient.saveState(cloudState).catch(() => {});
+                    if (window.cfClient && typeof window.cfClient.getReadingSecurityStatus === "function") {
+                        securityStatus = await window.cfClient.getReadingSecurityStatus();
                     }
-                } catch (_) {}
+                } catch (err) {
+                    console.warn("Could not check reading security status:", err);
+                } finally {
+                    if (!securityStatus.enabled && manualLogBtn) {
+                        manualLogBtn.disabled = false;
+                    }
+                }
 
-                renderAll();
+                if (securityStatus && securityStatus.enabled) {
+                    promptForReadingPin(async (verifiedPin) => {
+                        await executeOfflineLog(verifiedPin);
+                    }, () => {
+                        // User cancelled or closed the modal: keep all form inputs intact!
+                        isLoggingOffline = false;
+                        if (manualLogBtn) {
+                            manualLogBtn.disabled = false;
+                            manualLogBtn.textContent = "💾 Log";
+                        }
+                    });
+                } else {
+                    await executeOfflineLog(null);
+                }
             });
         }
     }

@@ -412,6 +412,42 @@
                 console.warn("Could not sync reading security to remote worker:", err);
                 return { success: true, enabled: isEnabled, offline: true };
             }
+        },
+
+        /* ---------------------------------------------
+           READING SESSIONS & ACTIVITY LOGGING
+        --------------------------------------------- */
+        async logReadingSession(sessionData, pin) {
+            if (!sessionData) return null;
+
+            try {
+                const headers = { "Content-Type": "application/json" };
+                const cleanPin = pin ? String(pin).trim() : "";
+                if (cleanPin) headers["X-Reading-PIN"] = cleanPin;
+
+                const res = await apiRequest("/api/reading-sessions", {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify({
+                        session: sessionData,
+                        pin: cleanPin || undefined
+                    })
+                });
+                return res;
+            } catch (err) {
+                console.warn("Could not sync reading session to /api/reading-sessions:", err);
+                throw err;
+            }
+        },
+
+        async getReadingSessions() {
+            try {
+                const res = await apiRequest("/api/reading-sessions", { method: "GET" });
+                if (Array.isArray(res)) return res;
+            } catch (err) {
+                console.warn("Could not fetch reading sessions from server:", err);
+            }
+            return null;
         }
     };
 
