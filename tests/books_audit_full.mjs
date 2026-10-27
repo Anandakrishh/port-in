@@ -253,7 +253,7 @@ fs.writeFileSync(runnerFile, booksHtml.replace("</body>", fullAuditScript + "</b
 
 console.log("Running comprehensive end-to-end audit in headless Chrome...");
 try {
-    const outCmd = `"${chromePath}" --headless=new --window-size=1200,900 --virtual-time-budget=12000 --dump-dom "http://127.0.0.1:8000/${runnerFile}"`;
+    const outCmd = `"${chromePath}" --headless=new --disable-gpu --no-sandbox --window-size=1200,900 --virtual-time-budget=12000 --dump-dom "http://127.0.0.1:8000/${runnerFile}"`;
     const dom = execSync(outCmd, { encoding: "utf-8" });
     const match = dom.match(/<title>(.*?)<\/title>/);
     console.log("Result:", match ? match[1] : "UNKNOWN");

@@ -2712,19 +2712,71 @@
 }
 
 .reading-pin-feedback {
-    min-height: 20px;
+    min-height: 0;
     font-size: 12px;
     font-weight: 600;
-    margin-bottom: 16px;
+    margin-bottom: 0;
     line-height: 1.4;
+    transition: all 0.15s ease;
 }
 
 .reading-pin-feedback.has-error {
+    min-height: 20px;
     color: #8A2E2E;
     background: #FDF0F0;
     border: 1.5px solid #8A2E2E;
     border-radius: 8px;
     padding: 6px 10px;
+    margin-bottom: 12px;
+}
+
+.reading-pin-owner-notice {
+    background: #FAF7F0;
+    border: 2px solid #2B2926;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+    text-align: left;
+    box-shadow: 2px 2px #2B2926;
+    box-sizing: border-box;
+}
+
+.owner-notice-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.owner-notice-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: #D9D3EA;
+    border: 1.5px solid #2B2926;
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1;
+    flex-shrink: 0;
+    box-shadow: 1px 1px #2B2926;
+}
+
+.owner-notice-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #2B2926;
+    letter-spacing: -0.01em;
+}
+
+.owner-notice-text {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: #55514B;
+    margin: 0;
 }
 
 .reading-pin-actions {
@@ -2801,5 +2853,25 @@
         font-size: 22px;
         letter-spacing: 8px;
         padding: 10px 12px;
+    }
+
+    .reading-pin-owner-notice {
+        padding: 8px 10px;
+        margin-bottom: 14px;
+    }
+
+    .owner-notice-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 10px;
+    }
+
+    .owner-notice-title {
+        font-size: 11px;
+    }
+
+    .owner-notice-text {
+        font-size: 10.5px;
+        line-height: 1.4;
     }
 }
