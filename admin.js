@@ -29,6 +29,7 @@
     // Old Records Tab Elements
     const oldRecordsView = document.getElementById("oldRecordsView");
     const readingLogView = document.getElementById("readingLogView");
+    const readingSecurityView = document.getElementById("readingSecurityView");
     const oldRecordsCount = document.getElementById("oldRecordsCount");
     const oldRecordsSearch = document.getElementById("oldRecordsSearch");
     const oldRecordsFilterPills = document.getElementById("oldRecordsFilterPills");
@@ -114,25 +115,85 @@
                 creationPanel.classList.add("admin-hidden");
                 recentSection.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.add("admin-hidden");
+                if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
                 oldRecordsView.classList.remove("admin-hidden");
                 loadOldRecords();
             } else if (currentType === "reading_log") {
                 creationPanel.classList.add("admin-hidden");
                 recentSection.classList.add("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
+                if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.remove("admin-hidden");
                 loadReadingLogView();
+            } else if (currentType === "reading_security") {
+                creationPanel.classList.add("admin-hidden");
+                recentSection.classList.add("admin-hidden");
+                oldRecordsView.classList.add("admin-hidden");
+                if (readingLogView) readingLogView.classList.add("admin-hidden");
+                if (readingSecurityView) readingSecurityView.classList.remove("admin-hidden");
+                loadReadingSecurityView();
             } else {
                 creationPanel.classList.remove("admin-hidden");
                 recentSection.classList.remove("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.add("admin-hidden");
+                if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
                 updateForm();
             }
         } else {
             loginView.classList.remove("admin-hidden");
             dashboardView.classList.add("admin-hidden");
+            if (adminList) adminList.innerHTML = "";
+            if (oldRecordsList) oldRecordsList.innerHTML = "";
         }
+    }
+
+    /* ==========================================
+       LOGIN
+    ========================================== */
+    if (loginForm) {
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            setMessage(loginMessage, "Logging in...", true);
+
+            const submitBtn = loginForm.querySelector("button[type='submit']");
+            if (submitBtn) submitBtn.disabled = true;
+
+            try {
+                const emailInput = document.getElementById("loginEmail");
+                const passwordInput = document.getElementById("loginPassword");
+                const email = emailInput ? emailInput.value.trim() : "";
+                const password = passwordInput ? passwordInput.value : "";
+
+                if (!email || !password) {
+                    setMessage(loginMessage, "Email and password required");
+                    if (submitBtn) submitBtn.disabled = false;
+                    return;
+                }
+
+                await cfClient.login(email, password);
+                loginForm.reset();
+                if (loginMessage) loginMessage.textContent = "";
+                showState();
+            } catch (error) {
+                console.error("Login failed:", error);
+                setMessage(loginMessage, error.message || "Invalid email or password");
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+    }
+
+    /* ==========================================
+       LOGOUT
+    ========================================== */
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+            await cfClient.logout();
+            setMessage(loginMessage, "Logged out successfully.", true);
+            showState();
+        });
     }
 
     /* ==========================================
@@ -148,19 +209,29 @@
                 creationPanel.classList.add("admin-hidden");
                 recentSection.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.add("admin-hidden");
+                if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
                 oldRecordsView.classList.remove("admin-hidden");
                 loadOldRecords();
             } else if (currentType === "reading_log") {
                 creationPanel.classList.add("admin-hidden");
                 recentSection.classList.add("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
+                if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.remove("admin-hidden");
                 loadReadingLogView();
+            } else if (currentType === "reading_security") {
+                creationPanel.classList.add("admin-hidden");
+                recentSection.classList.add("admin-hidden");
+                oldRecordsView.classList.add("admin-hidden");
+                if (readingLogView) readingLogView.classList.add("admin-hidden");
+                if (readingSecurityView) readingSecurityView.classList.remove("admin-hidden");
+                loadReadingSecurityView();
             } else {
                 creationPanel.classList.remove("admin-hidden");
                 recentSection.classList.remove("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.add("admin-hidden");
+                if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
                 updateForm();
             }
         });
@@ -1082,9 +1153,195 @@
     }
 
     /* ==========================================
+       FEATURE: READING SESSION SECURITY VIEW
+    ========================================== */
+    let securityConfigured = false;
+    let securityFormWired = false;
+
+    async function loadReadingSecurityView() {
+        const securityStatusBadge = document.getElementById("securityStatusBadge");
+        const securityStatusDescription = document.getElementById("securityStatusDescription");
+        const securityEnabledToggle = document.getElementById("securityEnabledToggle");
+        const securityToggleText = document.getElementById("securityToggleText");
+        const newPinInput = document.getElementById("newPinInput");
+        const confirmPinInput = document.getElementById("confirmPinInput");
+        const readingSecurityForm = document.getElementById("readingSecurityForm");
+        const securityMessage = document.getElementById("securityMessage");
+        const toggleNewPinVisibility = document.getElementById("toggleNewPinVisibility");
+        const toggleConfirmPinVisibility = document.getElementById("toggleConfirmPinVisibility");
+
+        if (securityMessage) securityMessage.textContent = "";
+        if (newPinInput) newPinInput.value = "";
+        if (confirmPinInput) confirmPinInput.value = "";
+
+        // Fetch security status
+        try {
+            if (securityStatusBadge) {
+                securityStatusBadge.textContent = "CHECKING...";
+                securityStatusBadge.style.background = "#EAE6DF";
+                securityStatusBadge.style.color = "#2B2926";
+            }
+
+            const status = await cfClient.getReadingSecurityStatus();
+            const isEnabled = Boolean(status && status.enabled);
+            securityConfigured = isEnabled;
+
+            if (securityStatusBadge) {
+                securityStatusBadge.textContent = isEnabled ? "ENABLED" : "DISABLED";
+                securityStatusBadge.style.background = isEnabled ? "#A8C9A1" : "#EAE6DF";
+                securityStatusBadge.style.color = "#2B2926";
+            }
+
+            if (securityEnabledToggle) {
+                securityEnabledToggle.checked = isEnabled;
+            }
+            if (securityToggleText) {
+                securityToggleText.textContent = isEnabled ? "Enabled" : "Disabled";
+            }
+            if (securityStatusDescription) {
+                securityStatusDescription.textContent = isEnabled
+                    ? "Start Reading Timer is protected by your five-digit PIN."
+                    : "Reading sessions can be started without a PIN.";
+            }
+        } catch (err) {
+            console.error("Failed to load reading security status:", err);
+            if (securityStatusBadge) {
+                securityStatusBadge.textContent = "UNKNOWN";
+            }
+        }
+
+        // Toggle text change on checkbox click
+        if (securityEnabledToggle && !securityEnabledToggle.dataset.wired) {
+            securityEnabledToggle.dataset.wired = "true";
+            securityEnabledToggle.addEventListener("change", () => {
+                if (securityToggleText) {
+                    securityToggleText.textContent = securityEnabledToggle.checked ? "Enabled" : "Disabled";
+                }
+            });
+        }
+
+        // Eye icon toggle for PIN visibility
+        if (toggleNewPinVisibility && !toggleNewPinVisibility.dataset.wired) {
+            toggleNewPinVisibility.dataset.wired = "true";
+            toggleNewPinVisibility.addEventListener("click", () => {
+                if (newPinInput) {
+                    const isPwd = newPinInput.type === "password";
+                    newPinInput.type = isPwd ? "text" : "password";
+                    toggleNewPinVisibility.textContent = isPwd ? "🙈" : "👁️";
+                }
+            });
+        }
+        if (toggleConfirmPinVisibility && !toggleConfirmPinVisibility.dataset.wired) {
+            toggleConfirmPinVisibility.dataset.wired = "true";
+            toggleConfirmPinVisibility.addEventListener("click", () => {
+                if (confirmPinInput) {
+                    const isPwd = confirmPinInput.type === "password";
+                    confirmPinInput.type = isPwd ? "text" : "password";
+                    toggleConfirmPinVisibility.textContent = isPwd ? "🙈" : "👁️";
+                }
+            });
+        }
+
+        // Filter numeric input for PINs
+        const enforceNumericPin = (input) => {
+            if (!input || input.dataset.filtered) return;
+            input.dataset.filtered = "true";
+            input.addEventListener("input", (e) => {
+                e.target.value = e.target.value.replace(/\D/g, "").slice(0, 5);
+            });
+        };
+        enforceNumericPin(newPinInput);
+        enforceNumericPin(confirmPinInput);
+
+        // Form submit handler
+        if (readingSecurityForm && !securityFormWired) {
+            securityFormWired = true;
+            readingSecurityForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                if (securityMessage) securityMessage.textContent = "";
+
+                const willEnable = securityEnabledToggle ? securityEnabledToggle.checked : false;
+                const newPin = newPinInput ? newPinInput.value.trim() : "";
+                const confirmPin = confirmPinInput ? confirmPinInput.value.trim() : "";
+
+                // Validate PIN if provided
+                if (newPin) {
+                    if (!/^\d{5}$/.test(newPin)) {
+                        setMessage(securityMessage, "PIN must contain exactly 5 numeric digits (0-9).");
+                        return;
+                    }
+                    if (newPin !== confirmPin) {
+                        setMessage(securityMessage, "Confirmation PIN does not match new PIN.");
+                        return;
+                    }
+                } else if (willEnable && !securityConfigured) {
+                    setMessage(securityMessage, "Please enter and confirm a new 5-digit PIN to enable security.");
+                    return;
+                }
+
+                const saveBtn = document.getElementById("saveSecurityBtn");
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = "Saving...";
+                }
+
+                try {
+                    await cfClient.setReadingSecurityConfig({
+                        enabled: willEnable,
+                        pin: newPin || undefined
+                    });
+
+                    // Update UI state
+                    securityConfigured = willEnable;
+                    if (newPinInput) newPinInput.value = "";
+                    if (confirmPinInput) confirmPinInput.value = "";
+
+                    if (securityStatusBadge) {
+                        securityStatusBadge.textContent = willEnable ? "ENABLED" : "DISABLED";
+                        securityStatusBadge.style.background = willEnable ? "#A8C9A1" : "#EAE6DF";
+                    }
+                    if (securityStatusDescription) {
+                        securityStatusDescription.textContent = willEnable
+                            ? "Start Reading Timer is protected by your five-digit PIN."
+                            : "Reading sessions can be started without a PIN.";
+                    }
+                    if (securityToggleText) {
+                        securityToggleText.textContent = willEnable ? "Enabled" : "Disabled";
+                    }
+
+                    setMessage(securityMessage, "Reading session security settings updated successfully! 🔒✨", true);
+                } catch (err) {
+                    console.error("Save security error:", err);
+                    setMessage(securityMessage, err.message || "Failed to update security settings.");
+                } finally {
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = "💾 Save Security Settings";
+                    }
+                }
+            });
+        }
+    }
+
+    /* ==========================================
        INITIALIZE
     ========================================== */
     cfClient.onAuthStateChange(() => showState());
     updateForm();
     showState();
+
+    // Verify session with server on startup
+    (async () => {
+        if (cfClient.isLoggedIn()) {
+            try {
+                const user = await cfClient.verifySession();
+                if (!user) {
+                    setMessage(loginMessage, "Session expired. Please log in again.");
+                }
+            } catch (_) {
+                await cfClient.logout();
+            }
+            showState();
+        }
+    })();
 })();

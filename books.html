@@ -9,9 +9,9 @@
     <title>Books</title>
 
     <!-- Global Base Stylesheet with Cache Buster -->
-    <link rel="stylesheet" href="style.css?v=20261026-v5">
+    <link rel="stylesheet" href="style.css?v=20261027-v2">
     <!-- Dedicated Books Stylesheet with Cache Buster -->
-    <link rel="stylesheet" href="books.css?v=20261026-v5">
+    <link rel="stylesheet" href="books.css?v=20261027-v3">
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -79,6 +79,71 @@
             font-size: 16px !important;
             color: #55514B !important;
             margin: 0 !important;
+        }
+
+        /* Segmented Navigation */
+        .books-view-nav {
+            display: inline-flex !important;
+            align-items: center !important;
+            background: #FFFDF8 !important;
+            border: 3px solid #2B2926 !important;
+            border-radius: 18px !important;
+            padding: 5px !important;
+            box-shadow: 4px 4px #2B2926 !important;
+            margin-bottom: 24px !important;
+            gap: 6px !important;
+            box-sizing: border-box !important;
+        }
+
+        .view-tab-btn {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            background: transparent !important;
+            border: 2px solid transparent !important;
+            border-radius: 12px !important;
+            padding: 9px 18px !important;
+            font-family: 'Space Grotesk', sans-serif !important;
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            color: #2B2926 !important;
+            cursor: pointer !important;
+            box-sizing: border-box !important;
+            transition: all 0.15s ease !important;
+            text-decoration: none !important;
+            line-height: 1.2 !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+
+        .view-tab-btn:hover:not(.active) {
+            background: #EFE9DB !important;
+            border-color: #2B2926 !important;
+        }
+
+        .view-tab-btn.active {
+            background: #D9D3EA !important;
+            border: 2px solid #2B2926 !important;
+            box-shadow: 2px 2px #2B2926 !important;
+        }
+
+        .view-tab-btn .tab-badge {
+            background: #FFFDF8 !important;
+            border: 1.5px solid #2B2926 !important;
+            border-radius: 6px !important;
+            padding: 1px 6px !important;
+            font-size: 11px !important;
+            font-family: 'IBM Plex Mono', monospace !important;
+            font-weight: 700 !important;
+        }
+
+
+        .books-view-panel {
+            display: block !important;
+            width: 100% !important;
+        }
+
+        .books-view-hidden {
+            display: none !important;
         }
 
         /* Section 1: Reading Overview Card */
@@ -237,6 +302,19 @@
         }
 
         @media (max-width: 860px) {
+            .books-view-nav {
+                display: flex !important;
+                width: 100% !important;
+                justify-content: space-between !important;
+                gap: 6px !important;
+                padding: 5px !important;
+            }
+            .view-tab-btn {
+                flex: 1 !important;
+                justify-content: center !important;
+                padding: 9px 10px !important;
+                font-size: 14px !important;
+            }
             .book-streak-dashboard {
                 grid-template-columns: repeat(2, 1fr) !important;
             }
@@ -253,6 +331,31 @@
         }
 
         @media (max-width: 580px) {
+            .books-view-nav {
+                display: flex !important;
+                width: 100% !important;
+                justify-content: space-between !important;
+                border-radius: 16px !important;
+                padding: 4px !important;
+                gap: 4px !important;
+                margin-bottom: 20px !important;
+                box-sizing: border-box !important;
+            }
+            .view-tab-btn {
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                padding: 8px 4px !important;
+                font-size: 13px !important;
+                gap: 4px !important;
+                border-radius: 10px !important;
+                justify-content: center !important;
+            }
+            .view-tab-btn .tab-badge {
+                display: none !important;
+            }
+            .view-tab-btn .tab-label {
+                white-space: nowrap !important;
+            }
             .books-container {
                 padding: 20px 12px 48px !important;
             }
@@ -373,6 +476,13 @@
         }
 
         @media (max-width: 375px) {
+            .view-tab-btn {
+                padding: 7px 4px !important;
+                font-size: 12px !important;
+            }
+            .view-tab-btn .tab-icon {
+                font-size: 14px !important;
+            }
             .books-container {
                 padding: 16px 8px 40px !important;
             }
@@ -429,157 +539,60 @@
 
 
         <!-- ==========================================
-             SECTION 1: READING OVERVIEW & ANNUAL CHALLENGE
+             PRIMARY BOOKS NAVIGATION TABS
         =========================================== -->
-        <section id="readingOverviewSection" class="reading-overview-section">
-            <div id="bookChallengeWidget" class="book-challenge-widget">
-                <div class="challenge-card">
-                    <div class="challenge-header">
-                        <div class="challenge-title-group">
-                            <span class="challenge-badge">🎯 2026 Reading Challenge</span>
-                            <h3 class="challenge-heading">
-                                <strong>4</strong> of <strong>12</strong> books completed
-                            </h3>
+        <nav class="books-view-nav" aria-label="Books navigation" role="tablist">
+            <button type="button" class="view-tab-btn active" id="tabLibrary" data-view="library" role="tab" aria-selected="true" aria-controls="viewLibrary" tabindex="0">
+                <span class="tab-icon">📚</span>
+                <span class="tab-label">Library</span>
+                <span class="tab-badge" id="libraryCountBadge">6</span>
+            </button>
+            <button type="button" class="view-tab-btn" id="tabInsights" data-view="insights" role="tab" aria-selected="false" aria-controls="viewInsights" tabindex="-1">
+                <span class="tab-icon">📊</span>
+                <span class="tab-label">Insights</span>
+            </button>
+            <button type="button" class="view-tab-btn" id="tabSessions" data-view="sessions" role="tab" aria-selected="false" aria-controls="viewSessions" tabindex="-1">
+                <span class="tab-icon">⏱️</span>
+                <span class="tab-label">Sessions</span>
+            </button>
+        </nav>
+
+
+        <!-- ==========================================
+             VIEW 1: LIBRARY (Default View)
+        =========================================== -->
+        <div id="viewLibrary" class="books-view-panel" role="tabpanel" aria-labelledby="tabLibrary">
+
+            <!-- Reading Challenge Card -->
+            <section class="reading-overview-section challenge-overview-card">
+                <div id="bookChallengeWidget" class="book-challenge-widget">
+                    <div class="challenge-card">
+                        <div class="challenge-header">
+                            <div class="challenge-title-group">
+                                <span class="challenge-badge">🎯 2026 Reading Challenge</span>
+                                <h3 class="challenge-heading">
+                                    <strong>4</strong> of <strong>12</strong> books completed
+                                </h3>
+                            </div>
+                            <button type="button" class="challenge-edit-btn" id="editGoalBtn" aria-label="Edit reading goal">
+                                ⚙️ Goal (12)
+                            </button>
                         </div>
-                        <button type="button" class="challenge-edit-btn" id="editGoalBtn" aria-label="Edit reading goal">
-                            ⚙️ Goal (12)
-                        </button>
-                    </div>
 
-                    <div class="challenge-progress-bar">
-                        <div class="challenge-progress-fill" style="width: 33%;"></div>
-                    </div>
+                        <div class="challenge-progress-bar">
+                            <div class="challenge-progress-fill" style="width: 33%;"></div>
+                        </div>
 
-                    <div class="challenge-meta-row">
-                        <span class="challenge-pct">33% completed</span>
-                        <span class="challenge-rem">8 books to go</span>
-                        <span class="challenge-days">66 days left in 2026</span>
+                        <div class="challenge-meta-row">
+                            <span class="challenge-pct">33% completed</span>
+                            <span class="challenge-rem">8 books to go</span>
+                            <span class="challenge-days">66 days left in 2026</span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="overview-divider"></div>
-
-            <div id="bookStreakDashboard" class="book-streak-dashboard">
-                <div class="streak-card highlight-streak">
-                    <div class="streak-icon-pill">🔥 Current</div>
-                    <div class="streak-big-val">5 <span class="streak-unit">days</span></div>
-                    <div class="streak-sub-label">Current Reading Streak</div>
-                </div>
-                <div class="streak-card">
-                    <div class="streak-icon-pill">⚡ Best (2026)</div>
-                    <div class="streak-big-val">12 <span class="streak-unit">days</span></div>
-                    <div class="streak-sub-label">Longest Streak this Year</div>
-                </div>
-                <div class="streak-card">
-                    <div class="streak-icon-pill">📅 Total Days</div>
-                    <div class="streak-big-val">42 <span class="streak-unit">days</span></div>
-                    <div class="streak-sub-label">Days Read in 2026</div>
-                </div>
-                <div class="streak-card">
-                    <div class="streak-icon-pill">📚 Finished</div>
-                    <div class="streak-big-val">4 <span class="streak-unit">books</span></div>
-                    <div class="streak-sub-label">Books Read in 2026</div>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- ==========================================
-             LIVE READING SESSION TRACKER & TIMER
-        =========================================== -->
-        <div id="bookLiveTrackerWidget" class="book-live-tracker-widget"></div>
-
-
-        <!-- ==========================================
-             READING ANALYTICS & INTERACTIVE GRAPH
-        =========================================== -->
-        <div id="bookAnalyticsSection" class="book-analytics-section"></div>
-
-
-        <!-- ==========================================
-             FEATURES 2 & 3: READING ANALYTICS
-             (INTERACTIVE CALENDAR & MONTHLY BREAKDOWN)
-        =========================================== -->
-        <section class="book-analytics-grid">
-            <!-- Feature 2: Interactive Calendar -->
-            <div id="bookCalendarWidget" class="book-calendar-widget">
-                <div class="book-calendar-header">
-                    <div class="cal-title-group">
-                        <h3 class="cal-month-title">October 2026</h3>
-                        <span class="cal-subtitle">Daily reading activity</span>
-                    </div>
-                    <div class="cal-nav-group">
-                        <button type="button" class="cal-nav-btn" id="calPrevMonth" aria-label="Previous month">‹</button>
-                        <button type="button" class="cal-nav-today-btn" id="calTodayBtn">Today</button>
-                        <button type="button" class="cal-nav-btn" id="calNextMonth" aria-label="Next month">›</button>
-                    </div>
-                </div>
-
-                <div class="book-calendar-grid">
-                    <div class="cal-weekdays">
-                        <div class="cal-weekday">Mon</div>
-                        <div class="cal-weekday">Tue</div>
-                        <div class="cal-weekday">Wed</div>
-                        <div class="cal-weekday">Thu</div>
-                        <div class="cal-weekday">Fri</div>
-                        <div class="cal-weekday">Sat</div>
-                        <div class="cal-weekday">Sun</div>
-                    </div>
-                    <div class="cal-days">
-                        <!-- Initial placeholder days, hydrated by books.js -->
-                        <div class="cal-day-cell is-empty"></div>
-                        <div class="cal-day-cell is-empty"></div>
-                        <div class="cal-day-cell is-empty"></div>
-                        <div class="cal-day-cell" data-date="2026-10-01"><span class="cal-day-num">1</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-02"><span class="cal-day-num">2</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-03"><span class="cal-day-num">3</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-04"><span class="cal-day-num">4</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-05"><span class="cal-day-num">5</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-06"><span class="cal-day-num">6</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-07"><span class="cal-day-num">7</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-08"><span class="cal-day-num">8</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-09"><span class="cal-day-num">9</span></div>
-                        <div class="cal-day-cell has-activity" data-date="2026-10-10"><span class="cal-day-num">10</span><span class="cal-reading-dot"></span></div>
-                        <div class="cal-day-cell" data-date="2026-10-11"><span class="cal-day-num">11</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-12"><span class="cal-day-num">12</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-13"><span class="cal-day-num">13</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-14"><span class="cal-day-num">14</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-15"><span class="cal-day-num">15</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-16"><span class="cal-day-num">16</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-17"><span class="cal-day-num">17</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-18"><span class="cal-day-num">18</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-19"><span class="cal-day-num">19</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-20"><span class="cal-day-num">20</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-21"><span class="cal-day-num">21</span></div>
-                        <div class="cal-day-cell has-activity" data-date="2026-10-22"><span class="cal-day-num">22</span><span class="cal-reading-dot"></span></div>
-                        <div class="cal-day-cell has-activity" data-date="2026-10-23"><span class="cal-day-num">23</span><span class="cal-reading-dot"></span></div>
-                        <div class="cal-day-cell has-activity" data-date="2026-10-24"><span class="cal-day-num">24</span><span class="cal-reading-dot"></span></div>
-                        <div class="cal-day-cell has-activity" data-date="2026-10-25"><span class="cal-day-num">25</span><span class="cal-reading-dot"></span></div>
-                        <div class="cal-day-cell has-activity is-today" data-date="2026-10-26"><span class="cal-day-num">26</span><span class="cal-reading-dot"></span></div>
-                        <div class="cal-day-cell" data-date="2026-10-27"><span class="cal-day-num">27</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-28"><span class="cal-day-num">28</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-29"><span class="cal-day-num">29</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-30"><span class="cal-day-num">30</span></div>
-                        <div class="cal-day-cell" data-date="2026-10-31"><span class="cal-day-num">31</span></div>
-                    </div>
-                </div>
-
-                <div class="cal-footer-row">
-                    <div class="cal-legend">
-                        <span class="legend-item"><span class="legend-box has-activity"></span> Active day</span>
-                        <span class="legend-item"><span class="legend-box is-today"></span> Today</span>
-                        <span class="legend-item"><span class="legend-dot"></span> Logged session</span>
-                    </div>
-                    <div id="calSelectedInfo" class="cal-selected-info">
-                        <span class="cal-hint-text">💡 Tap any active date to view reading notes</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Feature 3: Monthly Reading Activity -->
-            <div id="bookMonthlyWidget" class="book-monthly-widget"></div>
-        </section>
+            <!-- Shelves & Search Bar -->
 
 
         <!-- ==========================================
@@ -722,6 +735,137 @@
 
         </section>
 
+        </div> <!-- /#viewLibrary -->
+
+
+        <!-- ==========================================
+             VIEW 2: INSIGHTS
+        =========================================== -->
+        <div id="viewInsights" class="books-view-panel books-view-hidden" role="tabpanel" aria-labelledby="tabInsights" hidden>
+
+            <!-- Reading Streaks Dashboard -->
+            <section class="reading-overview-section streaks-overview-card">
+                <div id="bookStreakDashboard" class="book-streak-dashboard">
+                    <div class="streak-card highlight-streak">
+                        <div class="streak-icon-pill">🔥 Current</div>
+                        <div class="streak-big-val">5 <span class="streak-unit">days</span></div>
+                        <div class="streak-sub-label">Current Reading Streak</div>
+                    </div>
+                    <div class="streak-card">
+                        <div class="streak-icon-pill">⚡ Best (2026)</div>
+                        <div class="streak-big-val">12 <span class="streak-unit">days</span></div>
+                        <div class="streak-sub-label">Longest Streak this Year</div>
+                    </div>
+                    <div class="streak-card">
+                        <div class="streak-icon-pill">📅 Total Days</div>
+                        <div class="streak-big-val">42 <span class="streak-unit">days</span></div>
+                        <div class="streak-sub-label">Days Read in 2026</div>
+                    </div>
+                    <div class="streak-card">
+                        <div class="streak-icon-pill">📚 Finished</div>
+                        <div class="streak-big-val">4 <span class="streak-unit">books</span></div>
+                        <div class="streak-sub-label">Books Read in 2026</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reading Analytics & Interactive Graph -->
+            <div id="bookAnalyticsSection" class="book-analytics-section"></div>
+
+            <!-- Features 2 & 3: Calendar & Monthly Activity Breakdown -->
+            <section class="book-analytics-grid">
+                <!-- Feature 2: Interactive Calendar -->
+                <div id="bookCalendarWidget" class="book-calendar-widget">
+                    <div class="book-calendar-header">
+                        <div class="cal-title-group">
+                            <h3 class="cal-month-title">October 2026</h3>
+                            <span class="cal-subtitle">Daily reading activity</span>
+                        </div>
+                        <div class="cal-nav-group">
+                            <button type="button" class="cal-nav-btn" id="calPrevMonth" aria-label="Previous month">‹</button>
+                            <button type="button" class="cal-nav-today-btn" id="calTodayBtn">Today</button>
+                            <button type="button" class="cal-nav-btn" id="calNextMonth" aria-label="Next month">›</button>
+                        </div>
+                    </div>
+
+                    <div class="book-calendar-grid">
+                        <div class="cal-weekdays">
+                            <div class="cal-weekday">Mon</div>
+                            <div class="cal-weekday">Tue</div>
+                            <div class="cal-weekday">Wed</div>
+                            <div class="cal-weekday">Thu</div>
+                            <div class="cal-weekday">Fri</div>
+                            <div class="cal-weekday">Sat</div>
+                            <div class="cal-weekday">Sun</div>
+                        </div>
+                        <div class="cal-days">
+                            <!-- Initial placeholder days, hydrated by books.js -->
+                            <div class="cal-day-cell is-empty"></div>
+                            <div class="cal-day-cell is-empty"></div>
+                            <div class="cal-day-cell is-empty"></div>
+                            <div class="cal-day-cell" data-date="2026-10-01"><span class="cal-day-num">1</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-02"><span class="cal-day-num">2</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-03"><span class="cal-day-num">3</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-04"><span class="cal-day-num">4</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-05"><span class="cal-day-num">5</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-06"><span class="cal-day-num">6</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-07"><span class="cal-day-num">7</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-08"><span class="cal-day-num">8</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-09"><span class="cal-day-num">9</span></div>
+                            <div class="cal-day-cell has-activity" data-date="2026-10-10"><span class="cal-day-num">10</span><span class="cal-reading-dot"></span></div>
+                            <div class="cal-day-cell" data-date="2026-10-11"><span class="cal-day-num">11</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-12"><span class="cal-day-num">12</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-13"><span class="cal-day-num">13</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-14"><span class="cal-day-num">14</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-15"><span class="cal-day-num">15</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-16"><span class="cal-day-num">16</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-17"><span class="cal-day-num">17</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-18"><span class="cal-day-num">18</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-19"><span class="cal-day-num">19</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-20"><span class="cal-day-num">20</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-21"><span class="cal-day-num">21</span></div>
+                            <div class="cal-day-cell has-activity" data-date="2026-10-22"><span class="cal-day-num">22</span><span class="cal-reading-dot"></span></div>
+                            <div class="cal-day-cell has-activity" data-date="2026-10-23"><span class="cal-day-num">23</span><span class="cal-reading-dot"></span></div>
+                            <div class="cal-day-cell has-activity" data-date="2026-10-24"><span class="cal-day-num">24</span><span class="cal-reading-dot"></span></div>
+                            <div class="cal-day-cell has-activity" data-date="2026-10-25"><span class="cal-day-num">25</span><span class="cal-reading-dot"></span></div>
+                            <div class="cal-day-cell has-activity is-today" data-date="2026-10-26"><span class="cal-day-num">26</span><span class="cal-reading-dot"></span></div>
+                            <div class="cal-day-cell" data-date="2026-10-27"><span class="cal-day-num">27</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-28"><span class="cal-day-num">28</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-29"><span class="cal-day-num">29</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-30"><span class="cal-day-num">30</span></div>
+                            <div class="cal-day-cell" data-date="2026-10-31"><span class="cal-day-num">31</span></div>
+                        </div>
+                    </div>
+
+                    <div class="cal-footer-row">
+                        <div class="cal-legend">
+                            <span class="legend-item"><span class="legend-box has-activity"></span> Active day</span>
+                            <span class="legend-item"><span class="legend-box is-today"></span> Today</span>
+                            <span class="legend-item"><span class="legend-dot"></span> Logged session</span>
+                        </div>
+                        <div id="calSelectedInfo" class="cal-selected-info">
+                            <span class="cal-hint-text">💡 Tap any active date to view reading notes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature 3: Monthly Reading Activity -->
+                <div id="bookMonthlyWidget" class="book-monthly-widget"></div>
+            </section>
+
+        </div>
+
+
+        <!-- ==========================================
+             VIEW 3: SESSIONS
+        =========================================== -->
+        <div id="viewSessions" class="books-view-panel books-view-hidden" role="tabpanel" aria-labelledby="tabSessions" hidden>
+
+            <!-- Live Reading Session Tracker & Timer -->
+            <div id="bookLiveTrackerWidget" class="book-live-tracker-widget"></div>
+
+        </div>
+
 
     </div>
 
@@ -778,10 +922,39 @@
     </div>
 
 
-    <script src="cloudflare-config.js?v=20261026-v5"></script>
-    <script src="cloudflare-client.js?v=20261026-v5"></script>
-    <script src="content-loader.js?v=20261026-v5"></script>
-    <script src="books.js?v=20261026-v5"></script>
+    <!-- ==========================================
+         FEATURE: READING SESSION PIN VERIFICATION MODAL
+    =========================================== -->
+    <div class="reading-pin-modal" id="readingPinModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="readingPinModalTitle">
+        <div class="reading-pin-backdrop" id="readingPinBackdrop"></div>
+        <div class="reading-pin-dialog">
+            <button type="button" class="reading-pin-close" id="readingPinCloseBtn" aria-label="Close PIN modal">×</button>
+            <div class="reading-pin-header">
+                <div class="reading-pin-icon-wrap">🔒</div>
+                <h3 id="readingPinModalTitle" class="reading-pin-title">Verify Reading Session</h3>
+                <p class="reading-pin-message">Enter your five-digit PIN to start tracking.</p>
+            </div>
+
+            <form id="readingPinForm" class="reading-pin-form" novalidate>
+                <div class="reading-pin-input-wrap">
+                    <input type="password" id="readingPinInput" class="reading-pin-input" maxlength="5" inputmode="numeric" pattern="[0-9]*" placeholder="•••••" autocomplete="off" aria-label="Five-digit PIN">
+                </div>
+
+                <div id="readingPinFeedback" class="reading-pin-feedback" aria-live="polite"></div>
+
+                <div class="reading-pin-actions">
+                    <button type="button" id="readingPinCancelBtn" class="reading-pin-btn btn-secondary">Cancel</button>
+                    <button type="submit" id="readingPinVerifyBtn" class="reading-pin-btn btn-primary" disabled>Verify</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script src="cloudflare-config.js?v=20261027-v2"></script>
+    <script src="cloudflare-client.js?v=20261027-v2"></script>
+    <script src="content-loader.js?v=20261027-v2"></script>
+    <script src="books.js?v=20261027-v3"></script>
 
 </body>
 

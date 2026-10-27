@@ -20,5 +20,10 @@ desktop.ini
 *.bak
 *.sql
 
+# Local dev database
+local_dev.db
+local_dev.db-journal
+
 # Local asset backups
 .backup_assets_original/
+scratch/

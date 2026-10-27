@@ -51,6 +51,7 @@
                     <button data-type="hobby">🎮 Hobby</button>
                     <button data-type="reading_log">📖 Reading Log</button>
                     <button data-type="old_records">📜 All records</button>
+                    <button data-type="reading_security">🔒 Reading Security</button>
                 </div>
 
                 <div id="creationPanel">
@@ -198,6 +199,61 @@
                     <div id="oldRecordsLoading" class="admin-message" style="text-align: center; padding: 20px;">Loading records...</div>
                     <div id="oldRecordsList" class="old-records-grid"></div>
                 </div>
+
+                <!-- READING SESSION SECURITY TAB VIEW -->
+                <div id="readingSecurityView" class="admin-hidden">
+                    <div class="old-records-header">
+                        <div class="old-records-title-row">
+                            <h2>🔒 Reading Session Security</h2>
+                            <span id="securityStatusBadge" class="badge" style="background: #EAE6DF; color: #2B2926;">CHECKING...</span>
+                        </div>
+                        <p class="small-note">Configure a 5-digit PIN to protect the "Start Reading Timer" in the Books section. When enabled, tracking sessions requires verifying the PIN first.</p>
+                    </div>
+
+                    <form id="readingSecurityForm" class="admin-form" style="background: #FFFDF8; border: 2px solid #2B2926; border-radius: 14px; padding: 22px; box-shadow: 4px 4px #2B2926; margin-bottom: 24px;">
+                        <!-- Status indicator card -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border: 2px solid #2B2926; border-radius: 10px; background: #FAF7F0; margin-bottom: 20px;">
+                            <div>
+                                <strong style="display: block; font-size: 15px; font-family: 'Space Grotesk', sans-serif;">PIN Protection Status</strong>
+                                <span id="securityStatusDescription" style="font-size: 12px; color: #666;">Reading sessions can be started without a PIN.</span>
+                            </div>
+                            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; margin: 0;">
+                                <input type="checkbox" id="securityEnabledToggle" style="width: 20px; height: 20px; cursor: pointer; accent-color: #2B2926;">
+                                <span id="securityToggleText">Disabled</span>
+                            </label>
+                        </div>
+
+                        <!-- PIN configuration fields -->
+                        <div id="securityPinFieldsGroup" style="display: flex; flex-direction: column; gap: 14px;">
+                            <div>
+                                <label for="newPinInput" style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">
+                                    New 5-Digit PIN <span style="font-weight: 400; color: #666;">(Digits 0-9, leading zeros allowed, e.g. 01234)</span>
+                                </label>
+                                <div style="position: relative;">
+                                    <input type="password" id="newPinInput" maxlength="5" inputmode="numeric" placeholder="Enter 5-digit PIN" autocomplete="new-password" style="width: 100%; padding: 10px 40px 10px 14px; border: 2px solid #2B2926; border-radius: 8px; font-family: monospace; font-size: 18px; letter-spacing: 4px;">
+                                    <button type="button" id="toggleNewPinVisibility" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px;" title="Show/Hide PIN">👁️</button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="confirmPinInput" style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px;">
+                                    Confirm 5-Digit PIN
+                                </label>
+                                <div style="position: relative;">
+                                    <input type="password" id="confirmPinInput" maxlength="5" inputmode="numeric" placeholder="Re-enter 5-digit PIN" autocomplete="new-password" style="width: 100%; padding: 10px 40px 10px 14px; border: 2px solid #2B2926; border-radius: 8px; font-family: monospace; font-size: 18px; letter-spacing: 4px;">
+                                    <button type="button" id="toggleConfirmPinVisibility" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px;" title="Show/Hide PIN">👁️</button>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 11px; color: #555; background: #F1ECE1; padding: 10px 12px; border-radius: 8px; border-left: 3px solid #2B2926; margin-top: 4px;">
+                                🔒 <strong>Security Guarantee:</strong> Your PIN is never stored or transmitted in plaintext. It is hashed using a salted SHA-256 cryptographic digest. Leave blank if you only wish to toggle protection on/off with your previously saved PIN.
+                            </div>
+                        </div>
+
+                        <button type="submit" id="saveSecurityBtn" style="margin-top: 18px; width: 100%; padding: 12px 20px; font-size: 14px; font-weight: 700; background: #D4C2FC; border: 2px solid #2B2926; border-radius: 8px; cursor: pointer; box-shadow: 2px 2px #2B2926;">💾 Save Security Settings</button>
+                        <div id="securityMessage" class="admin-message" style="margin-top: 10px;"></div>
+                    </form>
+                </div>
             </div>
 
             <section id="recentSection" class="admin-panel">
@@ -303,8 +359,8 @@
     </main>
 </div>
 
-<script src="cloudflare-config.js?v=2"></script>
-<script src="cloudflare-client.js?v=2"></script>
-<script src="admin.js?v=2"></script>
+<script src="cloudflare-config.js?v=20261027-v1"></script>
+<script src="cloudflare-client.js?v=20261027-v1"></script>
+<script src="admin.js?v=20261027-v1"></script>
 </body>
 </html>

@@ -10,34 +10,212 @@ export default {
         const origin = url.origin;
 
         // CORS headers
+        const reqOrigin = request.headers.get("Origin") || "*";
         const corsHeaders = {
-            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Origin": reqOrigin,
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key, Range",
-            "Access-Control-Expose-Headers": "Content-Length, Content-Range, Accept-Ranges"
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Expose-Headers": "Content-Length, Content-Range, Accept-Ranges, Set-Cookie"
         };
 
         if (request.method === "OPTIONS") {
             return new Response(null, { status: 204, headers: corsHeaders });
         }
 
-        const json = (data, status = 200) => {
+        const json = (data, status = 200, extraHeaders = {}) => {
             return new Response(JSON.stringify(data), {
                 status,
                 headers: {
                     "Content-Type": "application/json",
-                    ...corsHeaders
+                    ...corsHeaders,
+                    ...extraHeaders
                 }
             });
         };
 
-        const error = (msg, status = 400) => json({ error: msg }, status);
+        const error = (msg, status = 400, extraHeaders = {}) => json({ error: msg }, status, extraHeaders);
 
         // Helper: SHA-256 hash
         async function sha256(str) {
             const buf = new TextEncoder().encode(str);
             const digest = await crypto.subtle.digest("SHA-256", buf);
             return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+        }
+
+        // Constant-time string comparison against timing attacks
+        function timingSafeEqual(a, b) {
+            if (typeof a !== "string" || typeof b !== "string") return false;
+            if (a.length !== b.length) return false;
+            let result = 0;
+            for (let i = 0; i < a.length; i++) {
+                result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+            }
+            return result === 0;
+        }
+
+        // Salted SHA-256 for admin password
+        const PASSWORD_SALT = "anand_admin_v1_salt_secure_";
+        async function hashPasswordWithSalt(pwd) {
+            return await sha256(PASSWORD_SALT + pwd);
+        }
+
+        // HMAC-SHA256 Token Signing
+        async function signToken(dataStr, secret) {
+            const enc = new TextEncoder();
+            const key = await crypto.subtle.importKey(
+                "raw",
+                enc.encode(secret),
+                { name: "HMAC", hash: "SHA-256" },
+                false,
+                ["sign"]
+            );
+            const sig = await crypto.subtle.sign("HMAC", key, enc.encode(dataStr));
+            return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
+        }
+
+        async function verifyTokenSignature(dataStr, signature, secret) {
+            const expected = await signToken(dataStr, secret);
+            return timingSafeEqual(expected, signature);
+        }
+
+        function extractSessionToken(request) {
+            const authHeader = request.headers.get("Authorization") || "";
+            if (authHeader.startsWith("Bearer ")) {
+                return authHeader.substring(7).trim();
+            }
+            const cookieHeader = request.headers.get("Cookie") || "";
+            const cookies = cookieHeader.split(";").map(c => c.trim());
+            for (const c of cookies) {
+                if (c.startsWith("admin_session=")) {
+                    return decodeURIComponent(c.substring("admin_session=".length));
+                }
+            }
+            return null;
+        }
+
+        async function getActiveSessions(env) {
+            const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'active_admin_sessions'").first();
+            let sessions = {};
+            if (row && row.value) {
+                try { sessions = JSON.parse(row.value); } catch (_) {}
+            }
+            return sessions;
+        }
+
+        async function saveActiveSessions(sessions, env) {
+            await env.DB.prepare(
+                "INSERT INTO site_state (key, value, updated_at) VALUES ('active_admin_sessions', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+            ).bind(JSON.stringify(sessions)).run();
+        }
+
+        async function createSession(email, env) {
+            const sessionId = crypto.randomUUID();
+            const now = Date.now();
+            const expiresAt = now + (7 * 24 * 60 * 60 * 1000); // 7 days
+            const secret = env.SESSION_SECRET || "anand_admin_session_secret_2026_k9x2";
+            const dataStr = `${sessionId}.${expiresAt}.${email}`;
+            const signature = await signToken(dataStr, secret);
+            const token = `${sessionId}.${expiresAt}.${signature}`;
+
+            const sessions = await getActiveSessions(env);
+            for (const id in sessions) {
+                if (sessions[id].expires_at && sessions[id].expires_at < now) {
+                    delete sessions[id];
+                }
+            }
+            sessions[sessionId] = { email, created_at: now, expires_at: expiresAt };
+            await saveActiveSessions(sessions, env);
+
+            return { token, sessionId, expiresAt };
+        }
+
+        async function verifyAdminSession(request, env) {
+            const token = extractSessionToken(request);
+            if (!token) return { ok: false, error: "Unauthorized: Administrator access required" };
+
+            const parts = token.split(".");
+            if (parts.length !== 3) return { ok: false, error: "Unauthorized: Invalid session token" };
+
+            const [sessionId, expStr, sig] = parts;
+            const expiresAt = Number(expStr);
+            if (!expiresAt || Date.now() > expiresAt) {
+                return { ok: false, error: "Unauthorized: Session expired" };
+            }
+
+            const secret = env.SESSION_SECRET || "anand_admin_session_secret_2026_k9x2";
+            const authorizedEmail = (env.ADMIN_EMAIL || "hello.anandha@gmail.com").trim().toLowerCase();
+            const dataStr = `${sessionId}.${expStr}.${authorizedEmail}`;
+
+            const isValidSig = await verifyTokenSignature(dataStr, sig, secret);
+            if (!isValidSig) return { ok: false, error: "Unauthorized: Invalid session signature" };
+
+            const sessions = await getActiveSessions(env);
+            if (!sessions[sessionId]) {
+                return { ok: false, error: "Unauthorized: Session invalidated or logged out" };
+            }
+
+            return { ok: true, email: authorizedEmail, sessionId, token };
+        }
+
+        async function revokeSession(token, env) {
+            if (!token) return;
+            const parts = token.split(".");
+            const sessionId = parts[0];
+            const sessions = await getActiveSessions(env);
+            if (sessions[sessionId]) {
+                delete sessions[sessionId];
+                await saveActiveSessions(sessions, env);
+            }
+        }
+
+        async function checkLoginRateLimit(env, clientIp) {
+            const now = Date.now();
+            const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'admin_login_rate_limit'").first();
+            let rateMap = {};
+            if (row && row.value) {
+                try { rateMap = JSON.parse(row.value); } catch (_) {}
+            }
+            const record = rateMap[clientIp] || { attempts: 0, locked_until: 0 };
+            if (record.locked_until && record.locked_until > now) {
+                const waitSeconds = Math.ceil((record.locked_until - now) / 1000);
+                return { allowed: false, waitSeconds };
+            }
+            return { allowed: true, record, rateMap };
+        }
+
+        async function recordFailedLogin(env, clientIp) {
+            const now = Date.now();
+            const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'admin_login_rate_limit'").first();
+            let rateMap = {};
+            if (row && row.value) {
+                try { rateMap = JSON.parse(row.value); } catch (_) {}
+            }
+            const record = rateMap[clientIp] || { attempts: 0, locked_until: 0 };
+            const attempts = (record.attempts || 0) + 1;
+            record.attempts = attempts;
+            if (attempts >= 5) {
+                record.locked_until = now + (60 * 1000); // 60s cooldown
+                record.attempts = 0;
+            }
+            rateMap[clientIp] = record;
+            await env.DB.prepare(
+                "INSERT INTO site_state (key, value, updated_at) VALUES ('admin_login_rate_limit', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+            ).bind(JSON.stringify(rateMap)).run();
+        }
+
+        async function resetLoginRateLimit(env, clientIp) {
+            const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'admin_login_rate_limit'").first();
+            let rateMap = {};
+            if (row && row.value) {
+                try { rateMap = JSON.parse(row.value); } catch (_) {}
+            }
+            if (rateMap[clientIp]) {
+                delete rateMap[clientIp];
+                await env.DB.prepare(
+                    "INSERT INTO site_state (key, value, updated_at) VALUES ('admin_login_rate_limit', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                ).bind(JSON.stringify(rateMap)).run();
+            }
         }
 
         try {
@@ -49,35 +227,119 @@ export default {
             }
 
             // -------------------------------------------------------------
-            // 2. Auth: Login & Admin Check
+            // 2. Auth: Login, Logout, Session Check
             // -------------------------------------------------------------
             if (path === "/api/login" && request.method === "POST") {
-                const body = await request.json();
+                const clientIp = request.headers.get("cf-connecting-ip") || request.headers.get("x-real-ip") || "global";
+
+                // 1. Rate limiting
+                const rateCheck = await checkLoginRateLimit(env, clientIp);
+                if (!rateCheck.allowed) {
+                    return error(`Too many failed login attempts. Please wait ${rateCheck.waitSeconds}s before trying again.`, 429);
+                }
+
+                const body = await request.json().catch(() => ({}));
                 const email = (body.email || "").trim().toLowerCase();
                 const password = body.password || "";
 
-                if (!email || !password) return error("Email and password required");
-
-                // Check admin_users table
-                let user = await env.DB.prepare("SELECT * FROM admin_users WHERE lower(email) = ?").bind(email).first();
-
-                // If user doesn't exist yet, auto-provision admin account with this password
-                if (!user) {
-                    const hash = await sha256(password);
-                    const id = crypto.randomUUID();
-                    await env.DB.prepare("INSERT INTO admin_users (id, email, password_hash) VALUES (?, ?, ?)")
-                        .bind(id, email, hash).run();
-                    user = { id, email, password_hash: hash };
+                if (!email || !password) {
+                    return error("Email and password required", 400);
                 }
 
-                const hash = await sha256(password);
-                if (user.password_hash !== hash) {
+                const authorizedEmail = (env.ADMIN_EMAIL || "hello.anandha@gmail.com").trim().toLowerCase();
+
+                // 2. Strict Identity Check: ONLY hello.anandha@gmail.com is permitted
+                if (email !== authorizedEmail) {
+                    await recordFailedLogin(env, clientIp);
                     return error("Invalid email or password", 401);
                 }
 
-                // Generate a session token
-                const token = crypto.randomUUID();
-                return json({ success: true, token, user: { id: user.id, email: user.email } });
+                // 3. Password Verification
+                let passwordValid = false;
+
+                if (env.ADMIN_PASSWORD) {
+                    passwordValid = timingSafeEqual(password, env.ADMIN_PASSWORD);
+                    if (passwordValid) {
+                        const currentHash = await hashPasswordWithSalt(password);
+                        await env.DB.prepare(
+                            "INSERT INTO admin_users (id, email, password_hash) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash"
+                        ).bind("admin_primary", authorizedEmail, currentHash).run();
+                        // Purge any unauthorized accounts
+                        await env.DB.prepare("DELETE FROM admin_users WHERE lower(email) != ?").bind(authorizedEmail).run();
+                    }
+                } else if (env.ADMIN_PASSWORD_HASH) {
+                    const hashedAttempt = await hashPasswordWithSalt(password);
+                    passwordValid = timingSafeEqual(hashedAttempt, env.ADMIN_PASSWORD_HASH);
+                } else {
+                    let user = await env.DB.prepare("SELECT * FROM admin_users WHERE lower(email) = ?").bind(authorizedEmail).first();
+
+                    if (!user) {
+                        // Initial bootstrap for authorized administrator ONLY
+                        const hash = await hashPasswordWithSalt(password);
+                        await env.DB.prepare("INSERT INTO admin_users (id, email, password_hash) VALUES (?, ?, ?)")
+                            .bind("admin_primary", authorizedEmail, hash).run();
+                        passwordValid = true;
+                        // Purge any unauthorized users that may have been created earlier
+                        await env.DB.prepare("DELETE FROM admin_users WHERE lower(email) != ?").bind(authorizedEmail).run();
+                    } else {
+                        const saltedHash = await hashPasswordWithSalt(password);
+                        const legacyHash = await sha256(password);
+                        if (timingSafeEqual(user.password_hash, saltedHash)) {
+                            passwordValid = true;
+                        } else if (timingSafeEqual(user.password_hash, legacyHash)) {
+                            passwordValid = true;
+                            await env.DB.prepare("UPDATE admin_users SET password_hash = ? WHERE lower(email) = ?")
+                                .bind(saltedHash, authorizedEmail).run();
+                        }
+                    }
+                }
+
+                if (!passwordValid) {
+                    await recordFailedLogin(env, clientIp);
+                    return error("Invalid email or password", 401);
+                }
+
+                // 4. Successful login: reset rate limit & issue authenticated session
+                await resetLoginRateLimit(env, clientIp);
+                const session = await createSession(authorizedEmail, env);
+
+                const cookieHeader = `admin_session=${encodeURIComponent(session.token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`;
+                return new Response(JSON.stringify({
+                    success: true,
+                    token: session.token,
+                    user: { email: authorizedEmail }
+                }), {
+                    status: 200,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Set-Cookie": cookieHeader,
+                        ...corsHeaders
+                    }
+                });
+            }
+
+            if (path === "/api/logout" && request.method === "POST") {
+                const token = extractSessionToken(request);
+                if (token) {
+                    await revokeSession(token, env);
+                }
+                const clearCookie = "admin_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
+                return new Response(JSON.stringify({ success: true, message: "Logged out" }), {
+                    status: 200,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Set-Cookie": clearCookie,
+                        ...corsHeaders
+                    }
+                });
+            }
+
+            if (path === "/api/auth/session" && request.method === "GET") {
+                const auth = await verifyAdminSession(request, env);
+                if (!auth.ok) {
+                    return error(auth.error, 401);
+                }
+                return json({ authenticated: true, user: { email: auth.email } });
             }
 
             // -------------------------------------------------------------
@@ -167,6 +429,9 @@ export default {
             // 4. Media Upload: POST /api/upload
             // -------------------------------------------------------------
             if (path === "/api/upload" && request.method === "POST") {
+                const auth = await verifyAdminSession(request, env);
+                if (!auth.ok) return error(auth.error, 401);
+
                 const contentTypeHeader = request.headers.get("Content-Type") || "";
                 let filename = "media.bin";
                 let contentType = "application/octet-stream";
@@ -223,6 +488,9 @@ export default {
                 }
 
                 if (request.method === "POST" || request.method === "PUT") {
+                    const auth = await verifyAdminSession(request, env);
+                    if (!auth.ok) return error(auth.error, 401);
+
                     const body = await request.json();
                     const val = JSON.stringify(body);
                     await env.DB.prepare(
@@ -230,6 +498,128 @@ export default {
                     ).bind(val).run();
                     return json({ success: true });
                 }
+            }
+
+            // -------------------------------------------------------------
+            // 5b. Reading Security Settings & PIN Verification: /api/reading-security
+            // -------------------------------------------------------------
+            if (path === "/api/reading-security" && request.method === "GET") {
+                const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'reading_security'").first();
+                let enabled = false;
+                if (row && row.value) {
+                    try {
+                        const parsed = JSON.parse(row.value);
+                        enabled = Boolean(parsed.enabled);
+                    } catch (_) {}
+                }
+                return json({ enabled });
+            }
+
+            if (path === "/api/reading-security/verify" && request.method === "POST") {
+                const body = await request.json().catch(() => ({}));
+                const pin = String(body.pin || "").trim();
+
+                const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'reading_security'").first();
+                let secData = { enabled: false, pin_hash: "", failed_attempts: 0, locked_until: 0 };
+                if (row && row.value) {
+                    try {
+                        secData = { ...secData, ...JSON.parse(row.value) };
+                    } catch (_) {}
+                }
+
+                // If security is disabled, verification automatically passes
+                if (!secData.enabled) {
+                    return json({ success: true, verified: true, protection: "disabled" });
+                }
+
+                // Check rate limiting / lockout
+                const now = Date.now();
+                if (secData.locked_until && secData.locked_until > now) {
+                    const remainingSeconds = Math.ceil((secData.locked_until - now) / 1000);
+                    return error(`Too many failed attempts. Please wait ${remainingSeconds}s before trying again.`, 429);
+                }
+
+                if (!/^\d{5}$/.test(pin)) {
+                    return error("PIN must contain exactly 5 numeric digits.", 400);
+                }
+
+                const hashedAttempt = await sha256("anand_reading_pin_salt_v1_" + pin);
+                if (secData.pin_hash && secData.pin_hash === hashedAttempt) {
+                    // Reset failed attempts upon successful verification
+                    if (secData.failed_attempts > 0 || secData.locked_until > 0) {
+                        secData.failed_attempts = 0;
+                        secData.locked_until = 0;
+                        await env.DB.prepare(
+                            "INSERT INTO site_state (key, value, updated_at) VALUES ('reading_security', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                        ).bind(JSON.stringify(secData)).run();
+                    }
+                    return json({ success: true, verified: true });
+                }
+
+                // Failed attempt
+                const attempts = (secData.failed_attempts || 0) + 1;
+                secData.failed_attempts = attempts;
+                let errorMsg = "Incorrect PIN. Please try again.";
+
+                if (attempts >= 5) {
+                    secData.locked_until = now + (60 * 1000); // 60s cooldown
+                    secData.failed_attempts = 0; // reset for after cooldown
+                    errorMsg = "Too many failed attempts. Reading tracker locked for 60 seconds.";
+                } else {
+                    const remaining = 5 - attempts;
+                    errorMsg = `Incorrect PIN. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining before temporary cooldown.`;
+                }
+
+                await env.DB.prepare(
+                    "INSERT INTO site_state (key, value, updated_at) VALUES ('reading_security', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                ).bind(JSON.stringify(secData)).run();
+
+                return error(errorMsg, 401);
+            }
+
+            if (path === "/api/reading-security/config" && (request.method === "POST" || request.method === "PUT")) {
+                const auth = await verifyAdminSession(request, env);
+                if (!auth.ok) {
+                    return error(auth.error || "Unauthorized admin access required", 401);
+                }
+
+                const body = await request.json().catch(() => ({}));
+                const enabled = Boolean(body.enabled);
+                const pin = body.pin !== undefined && body.pin !== null && String(body.pin).trim() !== "" ? String(body.pin).trim() : null;
+
+                const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'reading_security'").first();
+                let current = { enabled: false, pin_hash: "" };
+                if (row && row.value) {
+                    try {
+                        current = { ...current, ...JSON.parse(row.value) };
+                    } catch (_) {}
+                }
+
+                let newHash = current.pin_hash;
+                if (pin !== null) {
+                    if (!/^\d{5}$/.test(pin)) {
+                        return error("PIN must contain exactly 5 digits (0-9).", 400);
+                    }
+                    newHash = await sha256("anand_reading_pin_salt_v1_" + pin);
+                }
+
+                if (enabled && !newHash) {
+                    return error("You must set a 5-digit PIN to enable security protection.", 400);
+                }
+
+                const updatedData = {
+                    enabled,
+                    pin_hash: newHash,
+                    failed_attempts: 0,
+                    locked_until: 0,
+                    updated_at: new Date().toISOString()
+                };
+
+                await env.DB.prepare(
+                    "INSERT INTO site_state (key, value, updated_at) VALUES ('reading_security', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                ).bind(JSON.stringify(updatedData)).run();
+
+                return json({ success: true, enabled });
             }
 
             // -------------------------------------------------------------
@@ -241,6 +631,12 @@ export default {
             const id = segments[1];
 
             if (allowedTables.includes(table)) {
+                // Mutating operations require admin session verification
+                if (["POST", "PUT", "DELETE"].includes(request.method)) {
+                    const auth = await verifyAdminSession(request, env);
+                    if (!auth.ok) return error(auth.error, 401);
+                }
+
                 // GET ALL
                 if (request.method === "GET" && !id) {
                     const res = await env.DB.prepare(`SELECT * FROM ${table} ORDER BY created_at DESC`).all();

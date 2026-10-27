@@ -73,6 +73,116 @@
 }
 
 /* ==============================================================
+   PRIMARY BOOKS VIEW NAVIGATION (Library | Insights | Sessions)
+   ============================================================== */
+.books-view-nav {
+    display: inline-flex;
+    align-items: center;
+    background: #FFFDF8;
+    border: 3px solid #2B2926;
+    border-radius: 20px;
+    padding: 6px;
+    box-shadow: 5px 5px #2B2926;
+    margin-bottom: 28px;
+    gap: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.view-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 14px;
+    padding: 10px 22px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #2B2926;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: all 0.16s ease;
+    text-decoration: none;
+    user-select: none;
+    line-height: 1.2;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.view-tab-btn:hover:not(.active) {
+    background: #EFE9DB;
+    border-color: #2B2926;
+    transform: translateY(-1px);
+}
+
+.view-tab-btn:focus-visible {
+    outline: 2px dashed #2B2926;
+    outline-offset: 3px;
+}
+
+.view-tab-btn.active {
+    background: #D9D3EA !important;
+    border: 2px solid #2B2926 !important;
+    box-shadow: 3px 3px #2B2926 !important;
+    color: #2B2926 !important;
+}
+
+.view-tab-btn .tab-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.view-tab-btn .tab-label {
+    letter-spacing: -0.01em;
+}
+
+.view-tab-btn .tab-badge {
+    background: #FFFDF8;
+    border: 1.5px solid #2B2926;
+    border-radius: 8px;
+    padding: 1px 7px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.view-tab-btn.active .tab-badge {
+    background: #FFFDF8;
+}
+
+
+.books-view-panel {
+    display: block;
+    width: 100%;
+    animation: viewFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.books-view-hidden {
+    display: none !important;
+}
+
+@keyframes viewFadeIn {
+    from {
+        opacity: 0.6;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.challenge-overview-card {
+    margin-bottom: 24px !important;
+}
+
+.streaks-overview-card {
+    margin-bottom: 28px !important;
+}
+
+/* ==============================================================
    SECTION 1: READING OVERVIEW & ANNUAL CHALLENGE
    ============================================================== */
 .reading-overview-section {
@@ -2093,6 +2203,22 @@
         padding: 24px 16px 48px;
     }
 
+    .books-view-nav {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        gap: 6px;
+        padding: 5px;
+    }
+
+    .view-tab-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 9px 12px;
+        font-size: 14px;
+        gap: 6px;
+    }
+
     .book-streak-dashboard {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 14px !important;
@@ -2116,6 +2242,35 @@
 
 /* Mobile (max-width: 580px) */
 @media (max-width: 580px) {
+    .books-view-nav {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        border-radius: 16px;
+        padding: 4px;
+        gap: 4px;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+    }
+
+    .view-tab-btn {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 8px 4px;
+        font-size: 13px;
+        gap: 4px;
+        border-radius: 10px;
+        justify-content: center;
+    }
+
+    .view-tab-btn .tab-badge {
+        display: none;
+    }
+
+    .view-tab-btn .tab-label {
+        white-space: nowrap;
+    }
+
     .reading-overview-section {
         padding: 18px 14px !important;
         box-shadow: 4px 4px #2B2926 !important;
@@ -2342,6 +2497,15 @@
         padding: 16px 8px 40px !important;
     }
 
+    .view-tab-btn {
+        padding: 7px 4px;
+        font-size: 12px;
+    }
+
+    .view-tab-btn .tab-icon {
+        font-size: 14px;
+    }
+
     .reading-overview-section {
         padding: 14px 10px !important;
         box-shadow: 3px 3px #2B2926 !important;
@@ -2381,5 +2545,261 @@
 
     .cal-day-num {
         font-size: 9px;
+    }
+}
+
+/* ==============================================================
+   FEATURE: READING SESSION PIN VERIFICATION MODAL
+   ============================================================== */
+.reading-pin-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.reading-pin-modal.active {
+    display: flex !important;
+}
+
+.reading-pin-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(43, 41, 38, 0.7);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.reading-pin-dialog {
+    position: relative;
+    background: #FFFDF8;
+    border: 3px solid #2B2926;
+    border-radius: 20px;
+    padding: 28px 24px 24px;
+    max-width: min(380px, calc(100vw - 36px));
+    width: 100%;
+    box-shadow: 6px 6px #2B2926;
+    z-index: 2;
+    box-sizing: border-box;
+    text-align: center;
+    margin: 0 auto;
+    animation: pinModalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pinModalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.reading-pin-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    background: #EFE9DB;
+    border: 2px solid #2B2926;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #2B2926;
+    cursor: pointer;
+    box-shadow: 2px 2px #2B2926;
+    transition: all 0.15s ease;
+}
+
+.reading-pin-close:hover {
+    transform: translateY(-1px);
+    background: #FAF7F0;
+}
+
+.reading-pin-close:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px #2B2926;
+}
+
+.reading-pin-icon-wrap {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    background: #D4C2FC;
+    border: 2.5px solid #2B2926;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: 2.5px 2.5px #2B2926;
+}
+
+.reading-pin-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #2B2926;
+    margin: 0 0 6px;
+}
+
+.reading-pin-message {
+    font-size: 13px;
+    color: #555;
+    margin: 0 0 20px;
+    line-height: 1.4;
+}
+
+.reading-pin-input-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.reading-pin-input {
+    width: 100%;
+    max-width: 220px;
+    padding: 12px 14px;
+    font-family: 'IBM Plex Mono', monospace, monospace;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 12px;
+    text-align: center;
+    color: #2B2926;
+    background: #FFFDF8;
+    border: 2.5px solid #2B2926;
+    border-radius: 12px;
+    box-shadow: 3px 3px #2B2926;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.reading-pin-input:focus {
+    border-color: #2B2926;
+    box-shadow: 4px 4px #2B2926;
+    background: #FAF7F0;
+}
+
+.reading-pin-input.is-invalid {
+    border-color: #8A2E2E;
+    box-shadow: 3px 3px #8A2E2E;
+    animation: pinShake 0.3s ease;
+}
+
+@keyframes pinShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+}
+
+.reading-pin-feedback {
+    min-height: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    line-height: 1.4;
+}
+
+.reading-pin-feedback.has-error {
+    color: #8A2E2E;
+    background: #FDF0F0;
+    border: 1.5px solid #8A2E2E;
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.reading-pin-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.reading-pin-btn {
+    flex: 1;
+    padding: 11px 16px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    border: 2px solid #2B2926;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 3px 3px #2B2926;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.15s ease;
+}
+
+.reading-pin-btn:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px #2B2926;
+}
+
+.reading-pin-btn.btn-secondary {
+    background: #EFE9DB;
+    color: #2B2926;
+}
+
+.reading-pin-btn.btn-secondary:hover:not(:disabled) {
+    background: #E5DFC8;
+}
+
+.reading-pin-btn.btn-primary {
+    background: #A8C9A1;
+    color: #2B2926;
+}
+
+.reading-pin-btn.btn-primary:hover:not(:disabled) {
+    background: #96BD8E;
+}
+
+.reading-pin-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: 2px 2px #666;
+}
+
+@media (max-width: 600px) {
+    .reading-pin-modal {
+        padding: 12px;
+    }
+
+    .reading-pin-dialog {
+        padding: 22px 16px 18px;
+        box-shadow: 4px 4px #2B2926;
+        border-radius: 16px;
+        max-width: min(360px, calc(100% - 24px));
+        width: 100%;
+    }
+
+    .reading-pin-title {
+        font-size: 18px;
+    }
+
+    .reading-pin-message {
+        font-size: 12px;
+        margin-bottom: 14px;
+    }
+
+    .reading-pin-input {
+        font-size: 22px;
+        letter-spacing: 8px;
+        padding: 10px 12px;
     }
 }

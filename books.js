@@ -97,75 +97,8 @@
         }
     };
 
-    // Authentic seed reading sessions for ongoing reading ("It Ends with us")
-    const DEFAULT_ACTIVITIES = [
-        {
-            id: "act-seed-1",
-            date: "2026-10-10",
-            book_id: "book-it-ends-with-us",
-            book_title: "It Ends with us",
-            start_page: 1,
-            end_page: 45,
-            pages: 45,
-            minutes: 40,
-            notes: "Started reading Colleen Hoover. Gripping opening chapters."
-        },
-        {
-            id: "act-seed-2",
-            date: "2026-10-22",
-            book_id: "book-it-ends-with-us",
-            book_title: "It Ends with us",
-            start_page: 46,
-            end_page: 95,
-            pages: 50,
-            minutes: 45,
-            notes: "Chapters 4 to 6. Lily and Ryle encounter."
-        },
-        {
-            id: "act-seed-3",
-            date: "2026-10-23",
-            book_id: "book-it-ends-with-us",
-            book_title: "It Ends with us",
-            start_page: 96,
-            end_page: 145,
-            pages: 50,
-            minutes: 42,
-            notes: "Chapters 7 to 9. Fast-paced drama."
-        },
-        {
-            id: "act-seed-4",
-            date: "2026-10-24",
-            book_id: "book-it-ends-with-us",
-            book_title: "It Ends with us",
-            start_page: 146,
-            end_page: 195,
-            pages: 50,
-            minutes: 46,
-            notes: "Chapters 10 to 12. Emotional backstory revealed."
-        },
-        {
-            id: "act-seed-5",
-            date: "2026-10-25",
-            book_id: "book-it-ends-with-us",
-            book_title: "It Ends with us",
-            start_page: 196,
-            end_page: 240,
-            pages: 45,
-            minutes: 38,
-            notes: "Chapters 13 to 15. Boston flower shop scenes."
-        },
-        {
-            id: "act-seed-6",
-            date: "2026-10-26",
-            book_id: "book-it-ends-with-us",
-            book_title: "It Ends with us",
-            start_page: 241,
-            end_page: 290,
-            pages: 50,
-            minutes: 44,
-            notes: "Chapters 16 to 18. Today's evening reading."
-        }
-    ];
+    // Reading sessions initial state: clean slate
+    const DEFAULT_ACTIVITIES = [];
 
     // Helper: Escape HTML
     function escapeHtml(str = "") {
@@ -221,7 +154,7 @@
     function getVerifiedReadingDays(year = null) {
         const dateMap = new Map();
 
-        // 1. From recorded activity logs
+        // Derived strictly from recorded reading activity sessions
         state.activities.forEach(act => {
             if (!act || !act.date) return;
             const d = toDateString(act.date);
@@ -240,38 +173,6 @@
                 notes: act.notes || "",
                 minutes: act.minutes || 0
             });
-        });
-
-        // 2. From verified book completion dates
-        state.books.forEach(b => {
-            const finishedDate = toDateString(b.date_finished);
-            if (finishedDate && (!year || finishedDate.startsWith(`${year}-`))) {
-                if (!dateMap.has(finishedDate)) dateMap.set(finishedDate, []);
-                const existing = dateMap.get(finishedDate);
-                if (!existing.some(e => e.type === "finished" && e.bookId === b.id)) {
-                    existing.push({
-                        type: "finished",
-                        bookId: b.id,
-                        bookTitle: b.title,
-                        pages: b.pages || 0,
-                        notes: `Completed "${b.title}"`
-                    });
-                }
-            }
-
-            const startedDate = toDateString(b.date_started);
-            if (startedDate && (!year || startedDate.startsWith(`${year}-`))) {
-                if (!dateMap.has(startedDate)) dateMap.set(startedDate, []);
-                const existing = dateMap.get(startedDate);
-                if (!existing.some(e => e.bookId === b.id)) {
-                    existing.push({
-                        type: "started",
-                        bookId: b.id,
-                        bookTitle: b.title,
-                        notes: `Started reading "${b.title}"`
-                    });
-                }
-            }
         });
 
         return dateMap;
@@ -412,32 +313,17 @@
             return isInRange(d, priorStartDate, priorEndDate);
         });
 
-        // 1. Total Pages
-        let totalPages = currentSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
-        currentCompletedBooks.forEach(b => {
-            const bookHasSessions = currentSessions.some(s => s.book_id === b.id && (s.pages || 0) > 0);
-            if (!bookHasSessions && b.pages) {
-                totalPages += Number(b.pages) || 0;
-            }
-        });
-
-        let priorPages = priorSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
-        priorCompletedBooks.forEach(b => {
-            const hasSess = priorSessions.some(s => s.book_id === b.id && (s.pages || 0) > 0);
-            if (!hasSess && b.pages) priorPages += Number(b.pages) || 0;
-        });
+        // 1. Total Pages (strictly from tracked reading sessions)
+        const totalPages = currentSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
+        const priorPages = priorSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
 
         // 2. Total Reading Duration
         const totalMinutes = currentSessions.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
         const priorMinutes = priorSessions.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
 
-        // 3. Unique Reading Days
+        // 3. Unique Reading Days (strictly from tracked reading sessions)
         const readingDaySet = new Set();
         currentSessions.forEach(s => s.date && readingDaySet.add(toDateString(s.date)));
-        currentCompletedBooks.forEach(b => {
-            const d = toDateString(b.date_finished);
-            if (d) readingDaySet.add(d);
-        });
         const readingDays = readingDaySet.size;
 
         // 4. Books Finished
@@ -478,17 +364,11 @@
         });
         const readingSpeed = validSpeedMinutes >= 10 ? Math.round((validSpeedPages / validSpeedMinutes) * 60) : null;
 
-        // 8. Best Reading Day (date with maximum pages)
+        // 8. Best Reading Day (date with maximum pages read in sessions)
         const dayPageMap = {};
         currentSessions.forEach(s => {
             const d = toDateString(s.date);
             dayPageMap[d] = (dayPageMap[d] || 0) + (Number(s.pages) || 0);
-        });
-        currentCompletedBooks.forEach(b => {
-            const d = toDateString(b.date_finished);
-            if (d && !currentSessions.some(s => s.book_id === b.id && toDateString(s.date) === d)) {
-                dayPageMap[d] = (dayPageMap[d] || 0) + (Number(b.pages) || 0);
-            }
         });
 
         let bestDay = null;
@@ -576,11 +456,7 @@
                 const monthSessions = currentSessions.filter(s => toDateString(s.date).startsWith(prefix));
                 const monthBooks = currentCompletedBooks.filter(b => toDateString(b.date_finished || b.created_at).startsWith(prefix));
 
-                let monthPages = monthSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
-                monthBooks.forEach(b => {
-                    const hasSess = monthSessions.some(s => s.book_id === b.id && (s.pages || 0) > 0);
-                    if (!hasSess && b.pages) monthPages += Number(b.pages) || 0;
-                });
+                const monthPages = monthSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
 
                 const monthMins = monthSessions.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
                 const val = mode === "time" ? monthMins : monthPages;
@@ -604,11 +480,7 @@
                 const yrSessions = state.activities.filter(s => toDateString(s.date).startsWith(prefix));
                 const yrBooks = state.books.filter(b => normalizeStatus(b.status) === "read" && toDateString(b.date_finished || b.created_at).startsWith(prefix));
 
-                let yrPages = yrSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
-                yrBooks.forEach(b => {
-                    const hasSess = yrSessions.some(s => s.book_id === b.id && (s.pages || 0) > 0);
-                    if (!hasSess && b.pages) yrPages += Number(b.pages) || 0;
-                });
+                const yrPages = yrSessions.reduce((sum, s) => sum + (Number(s.pages) || 0), 0);
 
                 const yrMins = yrSessions.reduce((sum, s) => sum + (Number(s.minutes) || 0), 0);
                 const val = mode === "time" ? yrMins : yrPages;
@@ -1204,9 +1076,167 @@
         if (startPageInput) startPageInput.addEventListener("input", validatePages);
         if (endPageInput) endPageInput.addEventListener("input", validatePages);
 
+        function updateTabLiveBadge() {
+            // Live badge removed from navigation UI per requirements
+        }
+
+        // Helper: start timer stopwatch
+        function startLiveTimer(bookId) {
+            if (live.active) return;
+            live.active = true;
+            live.paused = false;
+            live.bookId = bookId || (bookSelect ? bookSelect.value : live.bookId);
+            live.startTime = new Date();
+            live.elapsedSeconds = 0;
+
+            clearInterval(live.intervalId);
+            live.intervalId = setInterval(() => {
+                if (!live.paused) {
+                    live.elapsedSeconds++;
+                    const dEl = document.getElementById("trackerTimerDisplay");
+                    if (dEl) {
+                        const m = Math.floor(live.elapsedSeconds / 60);
+                        const s = live.elapsedSeconds % 60;
+                        dEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+                    }
+                    updateTabLiveBadge();
+                }
+            }, 1000);
+
+            updateTabLiveBadge();
+            renderLiveSessionTracker();
+        }
+
+        // Helper: prompt for 5-digit PIN
+        function promptForReadingPin(onVerified) {
+            const modal = document.getElementById("readingPinModal");
+            const backdrop = document.getElementById("readingPinBackdrop");
+            const closeBtn = document.getElementById("readingPinCloseBtn");
+            const cancelBtn = document.getElementById("readingPinCancelBtn");
+            const form = document.getElementById("readingPinForm");
+            const pinInput = document.getElementById("readingPinInput");
+            const verifyBtn = document.getElementById("readingPinVerifyBtn");
+            const feedbackEl = document.getElementById("readingPinFeedback");
+
+            if (!modal) {
+                if (typeof onVerified === "function") onVerified();
+                return;
+            }
+
+            let isOpen = true;
+
+            const closeModal = () => {
+                if (!isOpen) return;
+                isOpen = false;
+                modal.classList.remove("active");
+                modal.setAttribute("aria-hidden", "true");
+                document.body.style.overflow = "";
+                cleanup();
+            };
+
+            const cleanup = () => {
+                if (closeBtn) closeBtn.removeEventListener("click", closeModal);
+                if (cancelBtn) cancelBtn.removeEventListener("click", closeModal);
+                if (backdrop) backdrop.removeEventListener("click", closeModal);
+                document.removeEventListener("keydown", onKeyDown);
+            };
+
+            const onKeyDown = (e) => {
+                if (e.key === "Escape") {
+                    closeModal();
+                }
+            };
+
+            if (pinInput) {
+                pinInput.value = "";
+                pinInput.classList.remove("is-invalid");
+            }
+            if (feedbackEl) {
+                feedbackEl.textContent = "";
+                feedbackEl.className = "reading-pin-feedback";
+            }
+            if (verifyBtn) {
+                verifyBtn.disabled = true;
+                verifyBtn.textContent = "Verify";
+            }
+
+            modal.classList.add("active");
+            modal.setAttribute("aria-hidden", "false");
+            document.body.style.overflow = "hidden";
+
+            setTimeout(() => {
+                if (pinInput) pinInput.focus();
+            }, 60);
+
+            if (closeBtn) closeBtn.addEventListener("click", closeModal);
+            if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+            if (backdrop) backdrop.addEventListener("click", closeModal);
+            document.addEventListener("keydown", onKeyDown);
+
+            if (pinInput && !pinInput.dataset.wired) {
+                pinInput.dataset.wired = "true";
+                pinInput.addEventListener("input", (e) => {
+                    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 5);
+                    pinInput.classList.remove("is-invalid");
+                    if (feedbackEl) {
+                        feedbackEl.textContent = "";
+                        feedbackEl.className = "reading-pin-feedback";
+                    }
+                    if (verifyBtn) {
+                        verifyBtn.disabled = e.target.value.length !== 5;
+                    }
+                });
+            }
+
+            const onSubmit = async (e) => {
+                if (e) e.preventDefault();
+                const pin = pinInput ? pinInput.value.trim() : "";
+                if (!/^\d{5}$/.test(pin)) {
+                    if (feedbackEl) {
+                        feedbackEl.textContent = "Please enter a five-digit numeric PIN.";
+                        feedbackEl.className = "reading-pin-feedback has-error";
+                    }
+                    if (pinInput) pinInput.classList.add("is-invalid");
+                    return;
+                }
+
+                if (verifyBtn) {
+                    verifyBtn.disabled = true;
+                    verifyBtn.textContent = "Verifying...";
+                }
+
+                try {
+                    if (window.cfClient && typeof window.cfClient.verifyReadingPin === "function") {
+                        await window.cfClient.verifyReadingPin(pin);
+                    }
+                    closeModal();
+                    if (typeof onVerified === "function") onVerified();
+                } catch (err) {
+                    console.warn("PIN verification failed:", err);
+                    if (verifyBtn) {
+                        verifyBtn.disabled = false;
+                        verifyBtn.textContent = "Verify";
+                    }
+                    if (feedbackEl) {
+                        feedbackEl.textContent = err.message || "Incorrect PIN. Please try again.";
+                        feedbackEl.className = "reading-pin-feedback has-error";
+                    }
+                    if (pinInput) {
+                        pinInput.classList.add("is-invalid");
+                        pinInput.select();
+                        pinInput.focus();
+                    }
+                }
+            };
+
+            if (form) form.onsubmit = onSubmit;
+        }
+
         // Start timer
         if (startBtn) {
-            startBtn.addEventListener("click", () => {
+            startBtn.addEventListener("click", async () => {
+                if (live.active) return; // Prevent repeated clicks
+
                 const bookId = bookSelect.value;
                 if (!bookId) {
                     if (feedback) feedback.textContent = "Please pick a book first!";
@@ -1214,25 +1244,26 @@
                 }
                 if (!validatePages()) return;
 
-                live.active = true;
-                live.paused = false;
-                live.bookId = bookId;
-                live.startTime = new Date();
-                live.elapsedSeconds = 0;
+                startBtn.disabled = true;
 
-                live.intervalId = setInterval(() => {
-                    if (!live.paused) {
-                        live.elapsedSeconds++;
-                        const dEl = document.getElementById("trackerTimerDisplay");
-                        if (dEl) {
-                            const m = Math.floor(live.elapsedSeconds / 60);
-                            const s = live.elapsedSeconds % 60;
-                            dEl.textContent = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-                        }
+                let securityStatus = { enabled: false };
+                try {
+                    if (window.cfClient && typeof window.cfClient.getReadingSecurityStatus === "function") {
+                        securityStatus = await window.cfClient.getReadingSecurityStatus();
                     }
-                }, 1000);
+                } catch (err) {
+                    console.warn("Could not check reading security status:", err);
+                } finally {
+                    startBtn.disabled = false;
+                }
 
-                renderLiveSessionTracker();
+                if (securityStatus && securityStatus.enabled) {
+                    promptForReadingPin(() => {
+                        startLiveTimer(bookId);
+                    });
+                } else {
+                    startLiveTimer(bookId);
+                }
             });
         }
 
@@ -1240,6 +1271,7 @@
         if (pauseBtn) {
             pauseBtn.addEventListener("click", () => {
                 live.paused = !live.paused;
+                updateTabLiveBadge();
                 renderLiveSessionTracker();
             });
         }
@@ -1251,6 +1283,7 @@
                 live.active = false;
                 live.paused = false;
                 live.elapsedSeconds = 0;
+                updateTabLiveBadge();
                 renderLiveSessionTracker();
             });
         }
@@ -1262,6 +1295,7 @@
 
                 stopBtn.disabled = true;
                 clearInterval(live.intervalId);
+                updateTabLiveBadge();
 
                 const book = state.books.find(b => b.id === live.bookId);
                 const bookTitle = book ? book.title : "Book";
@@ -1686,12 +1720,6 @@
             const mIdx = parseInt(fin.split("-")[1], 10) - 1;
             if (mIdx >= 0 && mIdx < 12) {
                 monthlyCompletedBooks[mIdx].push(b);
-                monthlyActiveDays[mIdx].add(fin);
-                // If book has pages and no duplicate sessions, count pages
-                const hasSess = state.activities.some(s => s.book_id === b.id && toDateString(s.date).startsWith(`${y}-${String(mIdx + 1).padStart(2, "0")}`));
-                if (!hasSess && b.pages) {
-                    monthlyPages[mIdx] += Number(b.pages) || 0;
-                }
             }
         });
 
@@ -1883,6 +1911,11 @@
             const norm = normalizeStatus(b.status);
             if (counts[norm] !== undefined) counts[norm]++;
         });
+
+        const libraryCountBadge = document.getElementById("libraryCountBadge");
+        if (libraryCountBadge) {
+            libraryCountBadge.textContent = counts.all;
+        }
 
         tabsContainer.innerHTML = `
             <button type="button" class="shelf-tab ${state.activeShelf === "all" ? "active" : ""}" data-shelf="all">
@@ -2094,16 +2127,12 @@
 
         state.overrides = { ...CATALOG_DEFAULTS, ...localOverrides, ...(cloudState.overrides || {}) };
 
-        // Guarantee authentic seed activities if local storage is fresh
-        if (cloudState.reading_activity && cloudState.reading_activity.length > 0) {
+        if (Array.isArray(cloudState.reading_activity)) {
             state.activities = cloudState.reading_activity;
-        } else if (localActivities.length > 0) {
+        } else if (Array.isArray(localActivities) && localActivities.length > 0) {
             state.activities = localActivities;
         } else {
-            state.activities = [...DEFAULT_ACTIVITIES];
-            try {
-                localStorage.setItem("books_reading_activity", JSON.stringify(state.activities));
-            } catch (_) {}
+            state.activities = [];
         }
 
         state.goals = (cloudState.reading_goals && Object.keys(cloudState.reading_goals).length > 0)
@@ -2163,6 +2192,123 @@
         state.books = Array.from(booksMap.values());
     }
 
+    /* ==============================================================
+       PRIMARY BOOKS VIEW NAVIGATION (Library | Insights | Sessions)
+       ============================================================== */
+    let viewNavInitialized = false;
+
+    function setupViewNavigation() {
+        const tabBtns = document.querySelectorAll(".view-tab-btn");
+        const panels = {
+            library: document.getElementById("viewLibrary"),
+            insights: document.getElementById("viewInsights"),
+            sessions: document.getElementById("viewSessions")
+        };
+
+        function activateView(viewName, updateHistory = true) {
+            const validViews = ["library", "insights", "sessions"];
+            const targetView = validViews.includes(viewName) ? viewName : "library";
+            state.activeView = targetView;
+
+            tabBtns.forEach(btn => {
+                const isTarget = btn.dataset.view === targetView;
+                btn.classList.toggle("active", isTarget);
+                btn.setAttribute("aria-selected", isTarget ? "true" : "false");
+                btn.setAttribute("tabindex", isTarget ? "0" : "-1");
+            });
+
+            Object.entries(panels).forEach(([name, panel]) => {
+                if (!panel) return;
+                const isTarget = name === targetView;
+                if (isTarget) {
+                    panel.classList.remove("books-view-hidden");
+                    panel.removeAttribute("hidden");
+                } else {
+                    panel.classList.add("books-view-hidden");
+                    panel.setAttribute("hidden", "");
+                }
+            });
+
+            try {
+                sessionStorage.setItem("books_active_view", targetView);
+            } catch (_) {}
+
+            if (updateHistory) {
+                try {
+                    const newUrl = `${window.location.pathname}${window.location.search}#${targetView}`;
+                    window.history.replaceState({ booksView: targetView }, "", newUrl);
+                } catch (_) {}
+            }
+
+            // Trigger view-specific re-renders to ensure accurate responsive layout
+            if (targetView === "insights") {
+                renderStreakDashboard();
+                renderReadingAnalytics();
+                renderCalendar();
+                renderMonthlyActivity();
+            } else if (targetView === "sessions") {
+                renderLiveSessionTracker();
+            } else if (targetView === "library") {
+                renderReadingGoal();
+                renderShelves();
+            }
+        }
+
+        if (!viewNavInitialized) {
+            viewNavInitialized = true;
+
+            tabBtns.forEach((btn, index) => {
+                btn.addEventListener("click", () => {
+                    activateView(btn.dataset.view);
+                });
+
+                btn.addEventListener("keydown", (e) => {
+                    let targetIndex = -1;
+                    if (e.key === "ArrowRight") {
+                        targetIndex = (index + 1) % tabBtns.length;
+                    } else if (e.key === "ArrowLeft") {
+                        targetIndex = (index - 1 + tabBtns.length) % tabBtns.length;
+                    } else if (e.key === "Home") {
+                        targetIndex = 0;
+                    } else if (e.key === "End") {
+                        targetIndex = tabBtns.length - 1;
+                    }
+
+                    if (targetIndex >= 0) {
+                        e.preventDefault();
+                        tabBtns[targetIndex].focus();
+                        activateView(tabBtns[targetIndex].dataset.view);
+                    }
+                });
+            });
+
+            function getInitialView() {
+                const hash = window.location.hash.replace("#", "").toLowerCase();
+                if (["library", "insights", "sessions"].includes(hash)) {
+                    return hash;
+                }
+                try {
+                    const stored = sessionStorage.getItem("books_active_view");
+                    if (["library", "insights", "sessions"].includes(stored)) {
+                        return stored;
+                    }
+                } catch (_) {}
+                return "library";
+            }
+
+            activateView(getInitialView(), false);
+
+            window.addEventListener("hashchange", () => {
+                const hash = window.location.hash.replace("#", "").toLowerCase();
+                if (["library", "insights", "sessions"].includes(hash)) {
+                    activateView(hash, false);
+                }
+            });
+
+            window.switchBooksView = activateView;
+        }
+    }
+
     let searchInitialized = false;
 
     function renderAll() {
@@ -2174,6 +2320,7 @@
         renderMonthlyActivity();
         renderShelves();
         setupBookDetailModal();
+        setupViewNavigation();
 
         if (!searchInitialized) {
             searchInitialized = true;
