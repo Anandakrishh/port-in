@@ -58,11 +58,31 @@
             headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const res = await fetch(url, {
-            credentials: "include",
-            ...options,
-            headers
-        });
+        let res;
+        try {
+            res = await fetch(url, {
+                credentials: "include",
+                ...options,
+                headers
+            });
+        } catch (fetchErr) {
+            // If fetch failed due to CORS credentials: "include" restrictions in strict browser contexts,
+            // retry cleanly without credentials mode
+            try {
+                res = await fetch(url, {
+                    ...options,
+                    headers
+                });
+            } catch (retryErr) {
+                const isNetwork = retryErr.message && (retryErr.message.includes("fetch") || retryErr.message.includes("network") || retryErr.name === "TypeError");
+                const friendlyMsg = isNetwork 
+                    ? "Unable to connect to backend server. Please verify your connection or try again."
+                    : (retryErr.message || "Network request failed");
+                const err = new Error(friendlyMsg);
+                err.original = retryErr;
+                throw err;
+            }
+        }
 
         if (!res.ok) {
             let errorMsg = `API Error ${res.status}`;
