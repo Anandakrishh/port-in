@@ -45,6 +45,15 @@ CREATE TABLE IF NOT EXISTS hobbies (
     created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS doodles (
+    id TEXT PRIMARY KEY,
+    title TEXT,
+    nickname TEXT DEFAULT 'Anonymous',
+    image_data TEXT NOT NULL,
+    status TEXT DEFAULT 'published',
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS site_state (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,

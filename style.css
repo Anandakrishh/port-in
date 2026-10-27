@@ -391,6 +391,29 @@ img {
         line-height: 1.6;
     }
 
+    .card-action-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 16px;
+        padding: 8px 16px;
+        background: #D9D3EA;
+        border: 2.5px solid #2B2926;
+        border-radius: 12px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 13px;
+        color: #2B2926;
+        box-shadow: 3px 3px #2B2926;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card:hover .card-action-pill {
+        transform: translateY(-2px);
+        box-shadow: 4px 4px #2B2926;
+        background: #CFC5E4;
+    }
+
 /* ---------- Social ---------- */
 
 .socials {

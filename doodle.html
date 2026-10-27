@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doodle Corner — Anand</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="doodle.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="page-header">
+            <a href="index.html" class="back">← Site</a>
+            <div class="page-title">
+                <h1>🎨 Doodle Corner</h1>
+                <p>Your little corner to draw, doodle, and leave a little creativity behind.</p>
+            </div>
+        </header>
+
+        <!-- Canvas Workspace Card -->
+        <section class="doodle-workspace" aria-label="Drawing Workspace">
+            <div class="canvas-container">
+                <canvas id="doodleCanvas" width="700" height="500" aria-label="Interactive drawing canvas"></canvas>
+            </div>
+
+            <!-- Drawing Toolbar -->
+            <div class="doodle-toolbar" role="toolbar" aria-label="Drawing Tools">
+                <!-- Tool modes -->
+                <div class="toolbar-group tool-modes">
+                    <button type="button" class="tool-btn active" id="toolBrush" aria-pressed="true" title="Pencil / Brush">
+                        <span class="tool-icon">✏️</span>
+                        <span class="tool-label">Draw</span>
+                    </button>
+                    <button type="button" class="tool-btn" id="toolEraser" aria-pressed="false" title="Eraser">
+                        <span class="tool-icon">🧹</span>
+                        <span class="tool-label">Erase</span>
+                    </button>
+                </div>
+
+                <!-- Palette -->
+                <div class="toolbar-group color-palette" role="radiogroup" aria-label="Color Palette">
+                    <button type="button" class="color-swatch active" data-color="#2B2926" style="--c: #2B2926" aria-label="Black" aria-checked="true" role="radio"></button>
+                    <button type="button" class="color-swatch" data-color="#8B7BB5" style="--c: #8B7BB5" aria-label="Lavender" aria-checked="false" role="radio"></button>
+                    <button type="button" class="color-swatch" data-color="#5C8A55" style="--c: #5C8A55" aria-label="Sage Green" aria-checked="false" role="radio"></button>
+                    <button type="button" class="color-swatch" data-color="#F5B301" style="--c: #F5B301" aria-label="Yellow" aria-checked="false" role="radio"></button>
+                    <button type="button" class="color-swatch" data-color="#D9534F" style="--c: #D9534F" aria-label="Coral Red" aria-checked="false" role="radio"></button>
+                    <button type="button" class="color-swatch" data-color="#4A89DC" style="--c: #4A89DC" aria-label="Sky Blue" aria-checked="false" role="radio"></button>
+                    <button type="button" class="color-swatch" data-color="#E67E22" style="--c: #E67E22" aria-label="Terracotta" aria-checked="false" role="radio"></button>
+                    <button type="button" class="color-swatch swatch-white" data-color="#FFFFFF" style="--c: #FFFFFF" aria-label="White" aria-checked="false" role="radio"></button>
+                </div>
+
+                <!-- Brush Sizes -->
+                <div class="toolbar-group brush-sizes" role="radiogroup" aria-label="Brush Sizes">
+                    <button type="button" class="size-btn" data-size="3" title="Fine (3px)" aria-label="Fine 3px" aria-checked="false" role="radio">
+                        <span class="size-dot dot-sm"></span>
+                    </button>
+                    <button type="button" class="size-btn active" data-size="8" title="Medium (8px)" aria-label="Medium 8px" aria-checked="true" role="radio">
+                        <span class="size-dot dot-md"></span>
+                    </button>
+                    <button type="button" class="size-btn" data-size="16" title="Thick (16px)" aria-label="Thick 16px" aria-checked="false" role="radio">
+                        <span class="size-dot dot-lg"></span>
+                    </button>
+                    <button type="button" class="size-btn" data-size="28" title="Marker (28px)" aria-label="Marker 28px" aria-checked="false" role="radio">
+                        <span class="size-dot dot-xl"></span>
+                    </button>
+                </div>
+
+                <!-- Actions: Undo, Redo, Clear -->
+                <div class="toolbar-group canvas-actions">
+                    <button type="button" class="action-btn" id="btnUndo" title="Undo (Ctrl+Z)" disabled aria-label="Undo">
+                        <span>↩️</span> Undo
+                    </button>
+                    <button type="button" class="action-btn" id="btnRedo" title="Redo (Ctrl+Y)" disabled aria-label="Redo">
+                        <span>↪️</span> Redo
+                    </button>
+                    <button type="button" class="action-btn action-danger" id="btnClear" title="Clear Canvas" aria-label="Clear Canvas">
+                        <span>🗑️</span> Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Save Row Form -->
+            <form id="doodleMetaForm" class="doodle-meta-form" novalidate>
+                <div class="meta-inputs">
+                    <div class="meta-field title-field">
+                        <label for="doodleTitle">Title</label>
+                        <input type="text" id="doodleTitle" class="doodle-input" placeholder="e.g. Midnight coffee thoughts" maxlength="60" autocomplete="off">
+                    </div>
+                    <div class="meta-field author-field">
+                        <label for="doodleNickname">Nickname</label>
+                        <input type="text" id="doodleNickname" class="doodle-input" placeholder="e.g. Anand or visitor" maxlength="40" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="meta-submit-wrap">
+                    <button type="submit" id="btnSaveDoodle" class="doodle-save-btn">
+                        <span class="save-icon">💾</span>
+                        <span class="save-text">Save Drawing</span>
+                    </button>
+                </div>
+            </form>
+
+            <div id="doodleFeedback" class="doodle-feedback" aria-live="polite"></div>
+        </section>
+
+        <!-- Public Gallery Section -->
+        <section class="doodle-gallery-section" id="doodleGallerySection">
+            <div class="gallery-header">
+                <div class="gallery-title-wrap">
+                    <h2>🖼️ Community Gallery</h2>
+                    <span class="gallery-badge" id="galleryCountBadge">0 doodles</span>
+                </div>
+                <button type="button" id="btnScrollToTop" class="gallery-top-btn" title="Back to drawing">
+                    ✏️ Draw Something
+                </button>
+            </div>
+
+            <!-- Gallery Container -->
+            <div id="doodleGrid" class="doodle-grid">
+                <!-- Injected dynamically by doodle.js -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="galleryEmpty" class="gallery-empty" style="display: none;">
+                <div class="empty-icon">🎨</div>
+                <h3>No doodles yet!</h3>
+                <p>The canvas above is clean and waiting. Draw something fun and be the first to leave a doodle in the gallery!</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Clear Confirmation Modal -->
+    <div id="clearConfirmModal" class="doodle-modal" aria-hidden="true" role="dialog" aria-labelledby="clearModalTitle">
+        <div class="modal-backdrop" id="clearModalBackdrop"></div>
+        <div class="modal-card">
+            <h3 id="clearModalTitle" class="modal-title">Clear canvas?</h3>
+            <p class="modal-text">This will clear your current drawing. Previously saved doodles in the gallery won't be affected.</p>
+            <div class="modal-actions">
+                <button type="button" id="cancelClearBtn" class="modal-btn btn-secondary">Keep Drawing</button>
+                <button type="button" id="confirmClearBtn" class="modal-btn btn-danger">Yes, Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox Modal for Full Resolution Artwork View -->
+    <div id="doodleLightbox" class="doodle-lightbox" aria-hidden="true" role="dialog" aria-labelledby="lightboxTitle">
+        <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+        <div class="lightbox-card">
+            <button type="button" id="lightboxCloseBtn" class="lightbox-close" aria-label="Close image">×</button>
+            <div class="lightbox-image-wrap">
+                <img id="lightboxImg" src="" alt="Enlarged doodle artwork">
+            </div>
+            <div class="lightbox-info">
+                <h3 id="lightboxTitle" class="lightbox-title">Untitled</h3>
+                <div class="lightbox-meta">
+                    <span id="lightboxAuthor" class="meta-author">by Anonymous</span>
+                    <span id="lightboxDate" class="meta-date">Just now</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="cloudflare-config.js?v=20261027-v3"></script>
+    <script src="cloudflare-client.js?v=20261027-v3"></script>
+    <script src="doodle.js?v=20261027-v1"></script>
+</body>
+</html>

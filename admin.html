@@ -52,6 +52,7 @@
                     <button data-type="reading_log">📖 Reading Log</button>
                     <button data-type="old_records">📜 All records</button>
                     <button data-type="reading_security">🔒 Reading Security</button>
+                    <button data-type="doodles">🎨 Doodle Management</button>
                 </div>
 
                 <div id="creationPanel">
@@ -254,6 +255,36 @@
                         <div id="securityMessage" class="admin-message" style="margin-top: 10px;"></div>
                     </form>
                 </div>
+
+                <!-- DOODLES MANAGEMENT TAB VIEW -->
+                <div id="doodlesView" class="admin-hidden">
+                    <div class="old-records-header">
+                        <div class="old-records-title-row">
+                            <h2>🎨 Doodle Management</h2>
+                            <span id="doodlesCountBadge" class="badge">0 doodles</span>
+                        </div>
+                        <p class="small-note">Manage community drawings. You can preview, publish/unpublish, delete individual doodles, or clear the entire gallery.</p>
+
+                        <div class="old-records-controls">
+                            <div class="old-records-search-box">
+                                <input type="text" id="doodleSearchInput" placeholder="🔍 Search doodles by title or nickname...">
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div class="old-records-pills" id="doodleFilterPills">
+                                    <button type="button" class="filter-pill active" data-doodle-filter="all">All</button>
+                                    <button type="button" class="filter-pill" data-doodle-filter="published">✓ Published</button>
+                                    <button type="button" class="filter-pill" data-doodle-filter="unpublished">✕ Hidden</button>
+                                </div>
+                                <button type="button" id="btnClearAllDoodlesBtn" style="padding: 7px 12px; background: #FDF0F0; color: #8A2E2E; border: 2px solid #8A2E2E; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; box-shadow: 2px 2px #2B2926;">
+                                    🗑️ Clear Entire Gallery
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="doodlesLoading" class="admin-message" style="text-align: center; padding: 20px;">Loading doodles...</div>
+                    <div id="adminDoodlesList" class="old-records-grid"></div>
+                </div>
             </div>
 
             <section id="recentSection" class="admin-panel">
@@ -356,11 +387,49 @@
                 </form>
             </div>
         </div>
+
+        <!-- DOODLE PREVIEW MODAL -->
+        <div id="doodlePreviewModal" class="admin-modal admin-hidden">
+            <div class="admin-modal-backdrop" id="doodlePreviewBackdrop"></div>
+            <div class="admin-modal-card" style="max-width: 620px;">
+                <div class="admin-modal-header">
+                    <div class="admin-modal-title-wrap">
+                        <span id="doodlePreviewBadge" class="cat-tag">Doodle Preview</span>
+                        <h3 id="doodlePreviewTitle">Untitled</h3>
+                    </div>
+                    <button type="button" id="doodlePreviewClose" class="admin-modal-close" aria-label="Close">×</button>
+                </div>
+                <div style="width: 100%; aspect-ratio: 7/5; background: #FFF; border: 2px solid #2B2926; border-radius: 12px; overflow: hidden; margin-bottom: 14px; display: flex; align-items: center; justify-content: center;">
+                    <img id="doodlePreviewImg" src="" alt="Doodle Preview" style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666; font-family: monospace;">
+                    <span id="doodlePreviewAuthor">by Anonymous</span>
+                    <span id="doodlePreviewDate">Date</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- DOODLE BULK CLEAR CONFIRM MODAL -->
+        <div id="doodleBulkClearModal" class="admin-modal admin-hidden">
+            <div class="admin-modal-backdrop" id="doodleBulkClearBackdrop"></div>
+            <div class="admin-modal-card" style="max-width: 460px; text-align: center;">
+                <h3 style="font-size: 20px; font-family: 'Space Grotesk', sans-serif; color: #8A2E2E; margin-bottom: 8px;">⚠️ Permanent Gallery Wipe</h3>
+                <p style="font-size: 13px; color: #555; line-height: 1.5; margin-bottom: 16px;">
+                    This action will permanently delete <strong>all saved doodles</strong> from the database. This cannot be undone.<br><br>
+                    To confirm, please type <strong>CLEAR</strong> below:
+                </p>
+                <input type="text" id="confirmClearInput" placeholder="Type CLEAR to confirm" autocomplete="off" style="width: 100%; padding: 10px; border: 2px solid #8A2E2E; border-radius: 8px; font-family: monospace; font-size: 14px; text-align: center; margin-bottom: 16px;">
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button type="button" id="cancelBulkClearBtn" class="admin-btn-secondary" style="flex: 1;">Cancel</button>
+                    <button type="button" id="confirmBulkClearBtn" class="record-delete-btn" style="flex: 1; padding: 10px;" disabled>Yes, Delete All Doodles</button>
+                </div>
+            </div>
+        </div>
     </main>
 </div>
 
-<script src="cloudflare-config.js?v=20261027-v2"></script>
-<script src="cloudflare-client.js?v=20261027-v2"></script>
-<script src="admin.js?v=20261027-v2"></script>
+<script src="cloudflare-config.js?v=20261027-v3"></script>
+<script src="cloudflare-client.js?v=20261027-v3"></script>
+<script src="admin.js?v=20261027-v3"></script>
 </body>
 </html>

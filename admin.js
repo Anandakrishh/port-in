@@ -30,6 +30,29 @@
     const oldRecordsView = document.getElementById("oldRecordsView");
     const readingLogView = document.getElementById("readingLogView");
     const readingSecurityView = document.getElementById("readingSecurityView");
+    const doodlesView = document.getElementById("doodlesView");
+    const doodlesCountBadge = document.getElementById("doodlesCountBadge");
+    const doodleSearchInput = document.getElementById("doodleSearchInput");
+    const doodleFilterPills = document.getElementById("doodleFilterPills");
+    const doodlesLoading = document.getElementById("doodlesLoading");
+    const adminDoodlesList = document.getElementById("adminDoodlesList");
+    const btnClearAllDoodlesBtn = document.getElementById("btnClearAllDoodlesBtn");
+
+    // Doodle Preview Modal Elements
+    const doodlePreviewModal = document.getElementById("doodlePreviewModal");
+    const doodlePreviewBackdrop = document.getElementById("doodlePreviewBackdrop");
+    const doodlePreviewClose = document.getElementById("doodlePreviewClose");
+    const doodlePreviewTitle = document.getElementById("doodlePreviewTitle");
+    const doodlePreviewImg = document.getElementById("doodlePreviewImg");
+    const doodlePreviewAuthor = document.getElementById("doodlePreviewAuthor");
+    const doodlePreviewDate = document.getElementById("doodlePreviewDate");
+
+    // Doodle Bulk Clear Modal Elements
+    const doodleBulkClearModal = document.getElementById("doodleBulkClearModal");
+    const doodleBulkClearBackdrop = document.getElementById("doodleBulkClearBackdrop");
+    const confirmClearInput = document.getElementById("confirmClearInput");
+    const cancelBulkClearBtn = document.getElementById("cancelBulkClearBtn");
+    const confirmBulkClearBtn = document.getElementById("confirmBulkClearBtn");
     const oldRecordsCount = document.getElementById("oldRecordsCount");
     const oldRecordsSearch = document.getElementById("oldRecordsSearch");
     const oldRecordsFilterPills = document.getElementById("oldRecordsFilterPills");
@@ -116,6 +139,7 @@
                 recentSection.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.add("admin-hidden");
                 if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
+                if (doodlesView) doodlesView.classList.add("admin-hidden");
                 oldRecordsView.classList.remove("admin-hidden");
                 loadOldRecords();
             } else if (currentType === "reading_log") {
@@ -123,6 +147,7 @@
                 recentSection.classList.add("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
                 if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
+                if (doodlesView) doodlesView.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.remove("admin-hidden");
                 loadReadingLogView();
             } else if (currentType === "reading_security") {
@@ -130,14 +155,24 @@
                 recentSection.classList.add("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.add("admin-hidden");
+                if (doodlesView) doodlesView.classList.add("admin-hidden");
                 if (readingSecurityView) readingSecurityView.classList.remove("admin-hidden");
                 loadReadingSecurityView();
+            } else if (currentType === "doodles") {
+                creationPanel.classList.add("admin-hidden");
+                recentSection.classList.add("admin-hidden");
+                oldRecordsView.classList.add("admin-hidden");
+                if (readingLogView) readingLogView.classList.add("admin-hidden");
+                if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
+                if (doodlesView) doodlesView.classList.remove("admin-hidden");
+                loadAdminDoodles();
             } else {
                 creationPanel.classList.remove("admin-hidden");
                 recentSection.classList.remove("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.add("admin-hidden");
                 if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
+                if (doodlesView) doodlesView.classList.add("admin-hidden");
                 updateForm();
             }
         } else {
@@ -210,6 +245,7 @@
                 recentSection.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.add("admin-hidden");
                 if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
+                if (doodlesView) doodlesView.classList.add("admin-hidden");
                 oldRecordsView.classList.remove("admin-hidden");
                 loadOldRecords();
             } else if (currentType === "reading_log") {
@@ -217,6 +253,7 @@
                 recentSection.classList.add("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
                 if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
+                if (doodlesView) doodlesView.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.remove("admin-hidden");
                 loadReadingLogView();
             } else if (currentType === "reading_security") {
@@ -224,14 +261,24 @@
                 recentSection.classList.add("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.add("admin-hidden");
+                if (doodlesView) doodlesView.classList.add("admin-hidden");
                 if (readingSecurityView) readingSecurityView.classList.remove("admin-hidden");
                 loadReadingSecurityView();
+            } else if (currentType === "doodles") {
+                creationPanel.classList.add("admin-hidden");
+                recentSection.classList.add("admin-hidden");
+                oldRecordsView.classList.add("admin-hidden");
+                if (readingLogView) readingLogView.classList.add("admin-hidden");
+                if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
+                if (doodlesView) doodlesView.classList.remove("admin-hidden");
+                loadAdminDoodles();
             } else {
                 creationPanel.classList.remove("admin-hidden");
                 recentSection.classList.remove("admin-hidden");
                 oldRecordsView.classList.add("admin-hidden");
                 if (readingLogView) readingLogView.classList.add("admin-hidden");
                 if (readingSecurityView) readingSecurityView.classList.add("admin-hidden");
+                if (doodlesView) doodlesView.classList.add("admin-hidden");
                 updateForm();
             }
         });
@@ -1321,6 +1368,233 @@
                 }
             });
         }
+    }
+
+    /* ==========================================
+       DOODLE MANAGEMENT (ADMIN)
+    ========================================== */
+    let adminDoodlesCache = [];
+    let currentDoodleFilter = "all";
+
+    async function loadAdminDoodles() {
+        if (!adminDoodlesList) return;
+        if (doodlesLoading) {
+            doodlesLoading.style.display = "block";
+            doodlesLoading.textContent = "Loading community doodles...";
+        }
+
+        try {
+            const doodles = await cfClient.getAdminDoodles();
+            adminDoodlesCache = Array.isArray(doodles) ? doodles : [];
+            if (doodlesCountBadge) {
+                doodlesCountBadge.textContent = `${adminDoodlesCache.length} doodle${adminDoodlesCache.length === 1 ? "" : "s"}`;
+            }
+            renderAdminDoodles();
+        } catch (err) {
+            console.error("Load admin doodles error:", err);
+            if (doodlesLoading) {
+                doodlesLoading.textContent = "Error loading doodles: " + (err.message || "Failed to fetch");
+                doodlesLoading.style.color = "#8A2E2E";
+            }
+        }
+    }
+
+    function renderAdminDoodles() {
+        if (!adminDoodlesList) return;
+        if (doodlesLoading) doodlesLoading.style.display = "none";
+
+        const query = (doodleSearchInput?.value || "").toLowerCase().trim();
+
+        let filtered = adminDoodlesCache.filter(d => {
+            if (currentDoodleFilter === "published" && d.status !== "published") return false;
+            if (currentDoodleFilter === "unpublished" && d.status !== "unpublished") return false;
+
+            if (query) {
+                const title = (d.title || "").toLowerCase();
+                const author = (d.nickname || "").toLowerCase();
+                if (!title.includes(query) && !author.includes(query)) return false;
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            adminDoodlesList.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 36px 16px; background: #FFFDF8; border: 2px dashed #2B2926; border-radius: 14px;">
+                    <p style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; margin: 0; font-weight: 700;">No doodles match your current filter.</p>
+                </div>
+            `;
+            return;
+        }
+
+        adminDoodlesList.innerHTML = filtered.map(d => {
+            const safeTitle = escapeHtml(d.title || "Untitled");
+            const safeAuthor = escapeHtml(d.nickname || "Anonymous");
+            const isPub = d.status === "published";
+            const dateStr = d.created_at ? new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+
+            return `
+                <div class="old-record-card" data-id="${escapeHtml(d.id)}">
+                    <div class="old-record-media-row">
+                        <img src="${escapeHtml(d.image_data)}" class="old-record-thumbnail" alt="${safeTitle}" style="object-fit: contain; background: #FFFFFF; width: 80px; height: 60px;">
+                        <div class="old-record-info">
+                            <div class="old-record-badges">
+                                <span class="cat-tag">🎨 Doodle</span>
+                                <span class="src-tag ${isPub ? 'dynamic' : ''}">${isPub ? '✓ Published' : '✕ Hidden'}</span>
+                            </div>
+                            <h4 class="old-record-title">${safeTitle}</h4>
+                            <p class="old-record-meta">by <strong>${safeAuthor}</strong> • ${dateStr}</p>
+                        </div>
+                    </div>
+                    <div class="old-record-actions">
+                        <button type="button" class="record-edit-btn btn-preview-doodle" data-id="${escapeHtml(d.id)}" style="background: #D9D3EA;">👁️ Preview</button>
+                        <button type="button" class="record-edit-btn btn-toggle-doodle" data-id="${escapeHtml(d.id)}" data-status="${d.status}" style="background: ${isPub ? '#F8F3EA' : '#A8C9A1'};">
+                            ${isPub ? 'Hide' : 'Publish'}
+                        </button>
+                        <button type="button" class="record-delete-btn btn-delete-doodle" data-id="${escapeHtml(d.id)}">🗑️ Delete</button>
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        // Wire Action Buttons
+        adminDoodlesList.querySelectorAll(".btn-preview-doodle").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const id = btn.dataset.id;
+                const doodle = adminDoodlesCache.find(d => d.id === id);
+                if (!doodle) return;
+
+                if (doodlePreviewImg) doodlePreviewImg.src = doodle.image_data;
+                if (doodlePreviewTitle) doodlePreviewTitle.textContent = doodle.title || "Untitled Doodle";
+                if (doodlePreviewAuthor) doodlePreviewAuthor.textContent = `by ${doodle.nickname || "Anonymous"}`;
+                if (doodlePreviewDate) doodlePreviewDate.textContent = doodle.created_at ? new Date(doodle.created_at).toLocaleString() : "";
+                if (doodlePreviewModal) doodlePreviewModal.classList.remove("admin-hidden");
+            });
+        });
+
+        adminDoodlesList.querySelectorAll(".btn-toggle-doodle").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const id = btn.dataset.id;
+                const currentStatus = btn.dataset.status;
+                const newStatus = currentStatus === "published" ? "unpublished" : "published";
+
+                btn.disabled = true;
+                btn.textContent = "...";
+                try {
+                    await cfClient.updateAdminDoodle(id, { status: newStatus });
+                    const found = adminDoodlesCache.find(d => d.id === id);
+                    if (found) found.status = newStatus;
+                    renderAdminDoodles();
+                } catch (err) {
+                    alert("Failed to update doodle status: " + err.message);
+                    renderAdminDoodles();
+                }
+            });
+        });
+
+        adminDoodlesList.querySelectorAll(".btn-delete-doodle").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const id = btn.dataset.id;
+                const doodle = adminDoodlesCache.find(d => d.id === id);
+                const title = doodle?.title || "this doodle";
+
+                if (!window.confirm(`Are you sure you want to permanently delete "${title}"?`)) {
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.textContent = "Deleting...";
+                try {
+                    await cfClient.deleteAdminDoodle(id);
+                    adminDoodlesCache = adminDoodlesCache.filter(d => d.id !== id);
+                    if (doodlesCountBadge) {
+                        doodlesCountBadge.textContent = `${adminDoodlesCache.length} doodle${adminDoodlesCache.length === 1 ? "" : "s"}`;
+                    }
+                    renderAdminDoodles();
+                } catch (err) {
+                    alert("Failed to delete doodle: " + err.message);
+                    renderAdminDoodles();
+                }
+            });
+        });
+    }
+
+    // Doodle Search & Filter Wiring
+    if (doodleSearchInput) {
+        doodleSearchInput.addEventListener("input", () => renderAdminDoodles());
+    }
+
+    if (doodleFilterPills) {
+        doodleFilterPills.querySelectorAll("button[data-doodle-filter]").forEach(pill => {
+            pill.addEventListener("click", () => {
+                doodleFilterPills.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+                pill.classList.add("active");
+                currentDoodleFilter = pill.dataset.doodleFilter || "all";
+                renderAdminDoodles();
+            });
+        });
+    }
+
+    // Doodle Preview Modal Close
+    if (doodlePreviewClose) {
+        doodlePreviewClose.addEventListener("click", () => {
+            if (doodlePreviewModal) doodlePreviewModal.classList.add("admin-hidden");
+        });
+    }
+    if (doodlePreviewBackdrop) {
+        doodlePreviewBackdrop.addEventListener("click", () => {
+            if (doodlePreviewModal) doodlePreviewModal.classList.add("admin-hidden");
+        });
+    }
+
+    // Bulk Clear Gallery Flow
+    if (btnClearAllDoodlesBtn) {
+        btnClearAllDoodlesBtn.addEventListener("click", () => {
+            if (confirmClearInput) confirmClearInput.value = "";
+            if (confirmBulkClearBtn) confirmBulkClearBtn.disabled = true;
+            if (doodleBulkClearModal) doodleBulkClearModal.classList.remove("admin-hidden");
+        });
+    }
+
+    if (confirmClearInput) {
+        confirmClearInput.addEventListener("input", (e) => {
+            if (confirmBulkClearBtn) {
+                confirmBulkClearBtn.disabled = e.target.value.trim() !== "CLEAR";
+            }
+        });
+    }
+
+    if (cancelBulkClearBtn) {
+        cancelBulkClearBtn.addEventListener("click", () => {
+            if (doodleBulkClearModal) doodleBulkClearModal.classList.add("admin-hidden");
+        });
+    }
+    if (doodleBulkClearBackdrop) {
+        doodleBulkClearBackdrop.addEventListener("click", () => {
+            if (doodleBulkClearModal) doodleBulkClearModal.classList.add("admin-hidden");
+        });
+    }
+
+    if (confirmBulkClearBtn) {
+        confirmBulkClearBtn.addEventListener("click", async () => {
+            confirmBulkClearBtn.disabled = true;
+            confirmBulkClearBtn.textContent = "Clearing Gallery...";
+
+            try {
+                await cfClient.clearAllAdminDoodles();
+                adminDoodlesCache = [];
+                if (doodlesCountBadge) doodlesCountBadge.textContent = "0 doodles";
+                renderAdminDoodles();
+                if (doodleBulkClearModal) doodleBulkClearModal.classList.add("admin-hidden");
+                alert("✨ All doodles have been cleared from the gallery.");
+            } catch (err) {
+                alert("Bulk clear failed: " + err.message);
+            } finally {
+                if (confirmBulkClearBtn) {
+                    confirmBulkClearBtn.disabled = false;
+                    confirmBulkClearBtn.textContent = "Yes, Delete All Doodles";
+                }
+            }
+        });
     }
 
     /* ==========================================

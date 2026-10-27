@@ -713,6 +713,149 @@ export default {
             }
 
             // -------------------------------------------------------------
+            // 5d. Doodles & Public Drawing Gallery: /api/doodles & /api/admin/doodles
+            // -------------------------------------------------------------
+            async function ensureDoodlesTable() {
+                try {
+                    await env.DB.prepare(`
+                        CREATE TABLE IF NOT EXISTS doodles (
+                            id TEXT PRIMARY KEY,
+                            title TEXT,
+                            nickname TEXT DEFAULT 'Anonymous',
+                            image_data TEXT NOT NULL,
+                            status TEXT DEFAULT 'published',
+                            created_at TEXT DEFAULT (datetime('now'))
+                        )
+                    `).run();
+                } catch (_) {}
+            }
+
+            // Public Doodles
+            if (path === "/api/doodles") {
+                await ensureDoodlesTable();
+
+                if (request.method === "GET") {
+                    const url = new URL(request.url);
+                    const limit = Math.min(Math.max(Number(url.searchParams.get("limit")) || 60, 1), 100);
+                    const offset = Math.max(Number(url.searchParams.get("offset")) || 0, 0);
+
+                    const res = await env.DB.prepare(
+                        "SELECT id, title, nickname, image_data, status, created_at FROM doodles WHERE status = 'published' ORDER BY created_at DESC LIMIT ? OFFSET ?"
+                    ).bind(limit, offset).all();
+
+                    return json(res.results || []);
+                }
+
+                if (request.method === "POST") {
+                    // Rate limiting check
+                    const clientIp = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || "guest";
+                    const rateKey = `doodle_rate_${clientIp.slice(0, 45)}`;
+                    const now = Date.now();
+
+                    const rateRow = await env.DB.prepare("SELECT value FROM site_state WHERE key = ?").bind(rateKey).first();
+                    let rateData = { timestamps: [] };
+                    if (rateRow && rateRow.value) {
+                        try { rateData = JSON.parse(rateRow.value); } catch (_) {}
+                    }
+                    rateData.timestamps = (rateData.timestamps || []).filter(t => (now - t) < 10 * 60 * 1000);
+
+                    if (rateData.timestamps.length >= 8) {
+                        return error("Too many drawing submissions. Please wait a few minutes before submitting another doodle.", 429);
+                    }
+
+                    const body = await request.json().catch(() => ({}));
+                    const imageData = String(body.image || body.image_data || "").trim();
+
+                    if (!imageData || !imageData.startsWith("data:image/")) {
+                        return error("A valid drawing image (data URL) is required.", 400);
+                    }
+
+                    if (imageData.length > 550000) {
+                        return error("Drawing payload exceeds maximum allowed size (500KB).", 400);
+                    }
+
+                    const title = String(body.title || "").trim().slice(0, 60);
+                    const nickname = String(body.nickname || "").trim().slice(0, 40) || "Anonymous";
+                    const doodleId = `doodle-${now}-${crypto.randomUUID().slice(0, 8)}`;
+
+                    await env.DB.prepare(
+                        "INSERT INTO doodles (id, title, nickname, image_data, status, created_at) VALUES (?, ?, ?, ?, 'published', datetime('now'))"
+                    ).bind(doodleId, title, nickname, imageData).run();
+
+                    // Update rate limit
+                    rateData.timestamps.push(now);
+                    await env.DB.prepare(
+                        "INSERT INTO site_state (key, value, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                    ).bind(rateKey, JSON.stringify(rateData)).run();
+
+                    return json({
+                        success: true,
+                        doodle: {
+                            id: doodleId,
+                            title,
+                            nickname,
+                            image_data: imageData,
+                            status: "published",
+                            created_at: new Date().toISOString()
+                        }
+                    }, 201);
+                }
+            }
+
+            // Admin Doodles Management: /api/admin/doodles
+            if (path.startsWith("/api/admin/doodles")) {
+                const auth = await verifyAdminSession(request, env);
+                if (!auth.ok) return error(auth.error || "Unauthorized admin access required", 401);
+
+                await ensureDoodlesTable();
+                const doodleId = path.replace("/api/admin/doodles", "").replace(/^\//, "").split("/")[0].split("?")[0];
+
+                // GET all doodles
+                if (request.method === "GET") {
+                    const res = await env.DB.prepare(
+                        "SELECT id, title, nickname, image_data, status, created_at FROM doodles ORDER BY created_at DESC"
+                    ).all();
+                    return json(res.results || []);
+                }
+
+                // PUT update single doodle status / metadata
+                if (request.method === "PUT" && doodleId) {
+                    const body = await request.json().catch(() => ({}));
+                    const newStatus = body.status === "unpublished" ? "unpublished" : (body.status === "published" ? "published" : null);
+                    const newTitle = body.title !== undefined ? String(body.title).trim().slice(0, 60) : null;
+                    const newNick = body.nickname !== undefined ? String(body.nickname).trim().slice(0, 40) : null;
+
+                    await env.DB.prepare(
+                        "UPDATE doodles SET status = COALESCE(?, status), title = COALESCE(?, title), nickname = COALESCE(?, nickname) WHERE id = ?"
+                    ).bind(newStatus, newTitle, newNick, doodleId).run();
+
+                    const updated = await env.DB.prepare("SELECT id, title, nickname, image_data, status, created_at FROM doodles WHERE id = ?").bind(doodleId).first();
+                    if (!updated) return error("Doodle not found", 404);
+                    return json({ success: true, doodle: updated });
+                }
+
+                // DELETE single doodle
+                if (request.method === "DELETE" && doodleId) {
+                    await env.DB.prepare("DELETE FROM doodles WHERE id = ?").bind(doodleId).run();
+                    return json({ success: true, id: doodleId });
+                }
+
+                // DELETE all doodles (bulk clear gallery)
+                if (request.method === "DELETE" && !doodleId) {
+                    const confirmHeader = request.headers.get("X-Confirm-Clear") || "";
+                    const body = await request.json().catch(() => ({}));
+                    const confirmBody = body.confirm || "";
+
+                    if (confirmHeader !== "CLEAR_ALL_DOODLES" && confirmBody !== "CLEAR_ALL_DOODLES") {
+                        return error("Explicit confirmation required to clear all doodles. Send header 'X-Confirm-Clear: CLEAR_ALL_DOODLES'.", 400);
+                    }
+
+                    await env.DB.prepare("DELETE FROM doodles").run();
+                    return json({ success: true, cleared: true, message: "All doodles cleared successfully." });
+                }
+            }
+
+            // -------------------------------------------------------------
             // 6. Generic Table CRUD: /api/:table
             // -------------------------------------------------------------
             const allowedTables = ["books", "movies", "songs", "pinboard", "hobbies"];

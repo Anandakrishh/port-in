@@ -448,6 +448,100 @@
                 console.warn("Could not fetch reading sessions from server:", err);
             }
             return null;
+        },
+
+        /* ---------------------------------------------
+           DOODLES & CREATIVE DRAWING CORNER
+        --------------------------------------------- */
+        async getDoodles(limit = 60, offset = 0) {
+            try {
+                const res = await apiRequest(`/api/doodles?limit=${limit}&offset=${offset}`, { method: "GET" });
+                if (Array.isArray(res)) return res;
+            } catch (err) {
+                console.warn("Could not fetch doodles from server:", err);
+            }
+            // Fallback to local cache if offline
+            try {
+                const raw = localStorage.getItem("doodles_local_cache");
+                if (raw) return JSON.parse(raw);
+            } catch (_) {}
+            return [];
+        },
+
+        async saveDoodle({ title, nickname, image }) {
+            if (!image) throw new Error("Drawing image data is required.");
+
+            // 1. Try server save
+            try {
+                const res = await apiRequest("/api/doodles", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: title || "",
+                        nickname: nickname || "Anonymous",
+                        image: image
+                    })
+                });
+
+                // Update local cache with newly created doodle
+                try {
+                    let cache = [];
+                    const raw = localStorage.getItem("doodles_local_cache");
+                    if (raw) cache = JSON.parse(raw);
+                    if (res && res.doodle) {
+                        cache.unshift(res.doodle);
+                        localStorage.setItem("doodles_local_cache", JSON.stringify(cache.slice(0, 50)));
+                    }
+                } catch (_) {}
+
+                return res;
+            } catch (err) {
+                console.warn("Remote doodle save failed, falling back to local storage:", err);
+                // Offline fallback
+                const fallbackDoodle = {
+                    id: `doodle-local-${Date.now()}`,
+                    title: String(title || "").trim().slice(0, 60),
+                    nickname: String(nickname || "Anonymous").trim().slice(0, 40),
+                    image_data: image,
+                    status: "published",
+                    created_at: new Date().toISOString()
+                };
+                let cache = [];
+                try {
+                    const raw = localStorage.getItem("doodles_local_cache");
+                    if (raw) cache = JSON.parse(raw);
+                } catch (_) {}
+                cache.unshift(fallbackDoodle);
+                localStorage.setItem("doodles_local_cache", JSON.stringify(cache.slice(0, 50)));
+                return { success: true, doodle: fallbackDoodle, offline: true };
+            }
+        },
+
+        async getAdminDoodles() {
+            return await apiRequest("/api/admin/doodles", { method: "GET" });
+        },
+
+        async updateAdminDoodle(id, { status, title, nickname }) {
+            return await apiRequest(`/api/admin/doodles/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status, title, nickname })
+            });
+        },
+
+        async deleteAdminDoodle(id) {
+            return await apiRequest(`/api/admin/doodles/${id}`, { method: "DELETE" });
+        },
+
+        async clearAllAdminDoodles() {
+            return await apiRequest("/api/admin/doodles", {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Confirm-Clear": "CLEAR_ALL_DOODLES"
+                },
+                body: JSON.stringify({ confirm: "CLEAR_ALL_DOODLES" })
+            });
         }
     };
 
