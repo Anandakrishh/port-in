@@ -124,20 +124,29 @@
                     </div>
 
                     <!-- Annual Goal Setting -->
-                    <div style="background: #FFFDF8; border: 2px solid #2B2926; border-radius: 14px; padding: 16px; margin-bottom: 20px; box-shadow: 4px 4px #2B2926;">
-                        <h3 style="font-size: 16px; margin: 0 0 10px; font-family: 'Space Grotesk', sans-serif;">🎯 Annual Reading Challenge Goal</h3>
-                        <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="background: #FFFDF8; border: 2px solid #2B2926; border-radius: 14px; padding: 18px; margin-bottom: 20px; box-shadow: 4px 4px #2B2926;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+                            <div>
+                                <h3 style="font-size: 16px; margin: 0 0 4px; font-family: 'Space Grotesk', sans-serif;">🎯 Annual Reading Goal</h3>
+                                <p class="small-note" style="margin: 0; font-size: 12px; color: #555;">Set the annual book target for the Books reading challenge. Only authenticated administrators can modify this target.</p>
+                            </div>
+                            <div id="currentGoalDisplay" style="background: #EFE9DB; border: 2px solid #2B2926; border-radius: 8px; padding: 4px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: #2B2926; box-shadow: 2px 2px #2B2926; align-self: center;">
+                                Current goal for 2026: <strong>12 books</strong>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 12px;">
                             <div style="flex: 1; min-width: 120px;">
-                                <label style="display: block; font-size: 11px; margin-bottom: 4px;">Year</label>
-                                <input type="number" id="readingGoalYear" style="width: 100%; padding: 8px; border: 2px solid #2B2926; border-radius: 8px;">
+                                <label style="display: block; font-size: 11px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; margin-bottom: 4px;">Challenge Year</label>
+                                <input type="number" id="readingGoalYear" min="2000" max="2100" style="width: 100%; padding: 8px 10px; border: 2px solid #2B2926; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 13px;">
                             </div>
                             <div style="flex: 1; min-width: 140px;">
-                                <label style="display: block; font-size: 11px; margin-bottom: 4px;">Target Books</label>
-                                <input type="number" id="readingGoalTarget" min="1" max="500" placeholder="e.g. 12" style="width: 100%; padding: 8px; border: 2px solid #2B2926; border-radius: 8px;">
+                                <label style="display: block; font-size: 11px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; margin-bottom: 4px;">Target Books</label>
+                                <input type="number" id="readingGoalTarget" min="1" max="1000" step="1" placeholder="e.g. 12" style="width: 100%; padding: 8px 10px; border: 2px solid #2B2926; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 13px;">
                             </div>
-                            <button type="button" id="saveReadingGoalBtn" style="padding: 10px 18px; background: #A8C9A1; border: 2px solid #2B2926; border-radius: 8px; font-weight: 700; cursor: pointer; box-shadow: 2px 2px #2B2926;">Save Goal</button>
+                            <button type="button" id="saveReadingGoalBtn" style="padding: 10px 18px; background: #A8C9A1; border: 2px solid #2B2926; border-radius: 8px; font-weight: 700; cursor: pointer; box-shadow: 2px 2px #2B2926; font-family: 'Space Grotesk', sans-serif; font-size: 13px;">Save Goal</button>
                         </div>
-                        <div id="goalMessage" class="admin-message" style="margin-top: 8px;"></div>
+                        <div id="goalMessage" class="admin-message" style="margin-top: 10px;"></div>
                     </div>
 
                     <!-- Log New Session -->

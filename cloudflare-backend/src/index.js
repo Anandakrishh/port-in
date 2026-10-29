@@ -484,6 +484,13 @@ export default {
                     if (row && row.value) {
                         try { state = JSON.parse(row.value); } catch (_) {}
                     }
+                    // Merge persistent reading_goals if not in site_overrides
+                    if (!state.reading_goals || Object.keys(state.reading_goals).length === 0) {
+                        const goalRow = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'reading_goals'").first();
+                        if (goalRow && goalRow.value) {
+                            try { state.reading_goals = JSON.parse(goalRow.value); } catch (_) {}
+                        }
+                    }
                     return json(state);
                 }
 
@@ -496,8 +503,90 @@ export default {
                     await env.DB.prepare(
                         "INSERT INTO site_state (key, value, updated_at) VALUES ('site_overrides', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
                     ).bind(val).run();
+
+                    // Synchronize reading_goals table row if provided in state
+                    if (body && body.reading_goals && typeof body.reading_goals === "object") {
+                        await env.DB.prepare(
+                            "INSERT INTO site_state (key, value, updated_at) VALUES ('reading_goals', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                        ).bind(JSON.stringify(body.reading_goals)).run();
+                    }
+
                     return json({ success: true });
                 }
+            }
+
+            // -------------------------------------------------------------
+            // 5c. Annual Reading Goals (Public Read, Admin Write): /api/reading-goals
+            // -------------------------------------------------------------
+            if (path === "/api/reading-goals") {
+                if (request.method === "GET") {
+                    let goals = {};
+                    const goalRow = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'reading_goals'").first();
+                    if (goalRow && goalRow.value) {
+                        try { goals = JSON.parse(goalRow.value); } catch (_) {}
+                    }
+                    if (!goals || Object.keys(goals).length === 0) {
+                        const overrideRow = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'site_overrides'").first();
+                        if (overrideRow && overrideRow.value) {
+                            try {
+                                const parsed = JSON.parse(overrideRow.value);
+                                if (parsed && parsed.reading_goals) goals = parsed.reading_goals;
+                            } catch (_) {}
+                        }
+                    }
+                    const currentYear = new Date().getFullYear();
+                    if (!goals || typeof goals !== "object" || Object.keys(goals).length === 0) {
+                        goals = { [currentYear]: { target: 12 } };
+                    }
+                    return json({ goals });
+                }
+
+                if (request.method === "POST" || request.method === "PUT") {
+                    const auth = await verifyAdminSession(request, env);
+                    if (!auth.ok) return error(auth.error || "Unauthorized", 401);
+
+                    const body = await request.json().catch(() => ({}));
+                    const year = parseInt(body.year, 10);
+                    const target = Number(body.target);
+
+                    if (isNaN(year) || year < 2000 || year > 2100) {
+                        return error("Invalid year. Must be between 2000 and 2100.", 400);
+                    }
+                    if (isNaN(target) || target <= 0 || !Number.isInteger(target) || target > 1000) {
+                        return error("Invalid reading goal. Must be a positive integer between 1 and 1000.", 400);
+                    }
+
+                    // 1. Fetch current goals
+                    let goals = {};
+                    const goalRow = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'reading_goals'").first();
+                    if (goalRow && goalRow.value) {
+                        try { goals = JSON.parse(goalRow.value); } catch (_) {}
+                    }
+                    if (!goals || typeof goals !== "object") goals = {};
+
+                    // 2. Update target for the specified year
+                    goals[year] = { target };
+
+                    // 3. Persist in site_state under 'reading_goals'
+                    await env.DB.prepare(
+                        "INSERT INTO site_state (key, value, updated_at) VALUES ('reading_goals', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                    ).bind(JSON.stringify(goals)).run();
+
+                    // 4. Also keep site_overrides in sync so existing consumers get it
+                    const overrideRow = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'site_overrides'").first();
+                    let siteOverrides = { deletedIds: [], overrides: {}, reading_activity: [] };
+                    if (overrideRow && overrideRow.value) {
+                        try { siteOverrides = JSON.parse(overrideRow.value); } catch (_) {}
+                    }
+                    siteOverrides.reading_goals = goals;
+                    await env.DB.prepare(
+                        "INSERT INTO site_state (key, value, updated_at) VALUES ('site_overrides', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                    ).bind(JSON.stringify(siteOverrides)).run();
+
+                    return json({ success: true, goals, updated: { year, target } });
+                }
+
+                return error("Method not allowed", 405);
             }
 
             // -------------------------------------------------------------

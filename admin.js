@@ -1002,6 +1002,7 @@
     async function loadReadingLogView() {
         const goalYearInput = document.getElementById("readingGoalYear");
         const goalTargetInput = document.getElementById("readingGoalTarget");
+        const currentGoalDisplay = document.getElementById("currentGoalDisplay");
         const goalMessage = document.getElementById("goalMessage");
         const saveGoalBtn = document.getElementById("saveReadingGoalBtn");
         const sessionForm = document.getElementById("readingSessionForm");
@@ -1025,7 +1026,7 @@
             sessionDate.value = `${y}-${m}-${d}`;
         }
 
-        // Load current state
+        // Load current state and reading goals
         let state = {};
         try {
             state = await cfClient.getState();
@@ -1033,6 +1034,15 @@
         if (!state) state = {};
         if (!state.reading_goals) state.reading_goals = {};
         if (!state.reading_activity) state.reading_activity = [];
+
+        try {
+            if (cfClient.getReadingGoals) {
+                const remoteGoals = await cfClient.getReadingGoals();
+                if (remoteGoals && typeof remoteGoals === "object") {
+                    state.reading_goals = { ...state.reading_goals, ...remoteGoals };
+                }
+            }
+        } catch (_) {}
 
         // Check localStorage fallback
         try {
@@ -1046,11 +1056,20 @@
             }
         } catch (_) {}
 
-        // Populate goal target
-        const yr = goalYearInput ? Number(goalYearInput.value) || currentYear : currentYear;
-        if (goalTargetInput) {
-            goalTargetInput.value = (state.reading_goals[yr] && state.reading_goals[yr].target) ? state.reading_goals[yr].target : 12;
+        function updateGoalDisplayForYear() {
+            const yr = goalYearInput ? Number(goalYearInput.value) || currentYear : currentYear;
+            const target = (state.reading_goals && state.reading_goals[yr] && state.reading_goals[yr].target) 
+                ? Number(state.reading_goals[yr].target) 
+                : 12;
+            if (goalTargetInput) {
+                goalTargetInput.value = target;
+            }
+            if (currentGoalDisplay) {
+                currentGoalDisplay.innerHTML = `Current goal for ${yr}: <strong>${target} ${target === 1 ? 'book' : 'books'}</strong>`;
+            }
         }
+
+        updateGoalDisplayForYear();
 
         // Populate book dropdown
         if (sessionBookSelect) {
@@ -1133,22 +1152,45 @@
         if (!readingLogInitialized) {
             readingLogInitialized = true;
 
+            if (goalYearInput) {
+                goalYearInput.addEventListener("input", updateGoalDisplayForYear);
+                goalYearInput.addEventListener("change", updateGoalDisplayForYear);
+            }
+
             if (saveGoalBtn) {
                 saveGoalBtn.addEventListener("click", async () => {
                     const y = Number(goalYearInput.value) || currentYear;
                     const target = Number(goalTargetInput.value);
-                    if (!target || target <= 0) {
-                        setMessage(goalMessage, "Please enter a valid positive number for your goal.");
+
+                    if (isNaN(y) || y < 2000 || y > 2100) {
+                        setMessage(goalMessage, "Please enter a valid year between 2000 and 2100.");
                         return;
                     }
+                    if (!target || target <= 0 || !Number.isInteger(target) || target > 1000) {
+                        setMessage(goalMessage, "Please enter a valid whole number for your goal (1-1000).");
+                        return;
+                    }
+
+                    saveGoalBtn.disabled = true;
+                    saveGoalBtn.textContent = "Saving...";
+
                     if (!state.reading_goals) state.reading_goals = {};
                     state.reading_goals[y] = { target };
+
                     try {
+                        if (cfClient.saveReadingGoal) {
+                            await cfClient.saveReadingGoal(y, target);
+                        } else {
+                            await cfClient.saveState(state);
+                        }
                         localStorage.setItem("books_reading_goals", JSON.stringify(state.reading_goals));
-                        await cfClient.saveState(state);
+                        updateGoalDisplayForYear();
                         setMessage(goalMessage, `Goal for ${y} saved: ${target} books! 🎯`, true);
                     } catch (e) {
-                        setMessage(goalMessage, "Failed to save goal.");
+                        setMessage(goalMessage, "Failed to save goal: " + (e.message || "Unauthorized"));
+                    } finally {
+                        saveGoalBtn.disabled = false;
+                        saveGoalBtn.textContent = "Save Goal";
                     }
                 });
             }

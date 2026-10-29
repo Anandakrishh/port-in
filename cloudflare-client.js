@@ -272,6 +272,47 @@
         },
 
         /* ---------------------------------------------
+           ANNUAL READING GOALS (Admin Managed)
+        --------------------------------------------- */
+        async getReadingGoals() {
+            let localGoals = {};
+            try {
+                const raw = localStorage.getItem("books_reading_goals");
+                if (raw) localGoals = JSON.parse(raw);
+            } catch (_) {}
+
+            try {
+                const res = await apiRequest("/api/reading-goals", { method: "GET" });
+                if (res && res.goals && typeof res.goals === "object") {
+                    localStorage.setItem("books_reading_goals", JSON.stringify(res.goals));
+                    return res.goals;
+                }
+            } catch (err) {
+                // Return cached local goals if offline
+            }
+            return localGoals;
+        },
+
+        async saveReadingGoal(year, target) {
+            const yr = parseInt(year, 10);
+            const tgt = parseInt(target, 10);
+            if (isNaN(yr) || isNaN(tgt) || tgt <= 0) {
+                throw new Error("Invalid year or target.");
+            }
+
+            const res = await apiRequest("/api/reading-goals", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ year: yr, target: tgt })
+            });
+
+            if (res && res.goals) {
+                localStorage.setItem("books_reading_goals", JSON.stringify(res.goals));
+            }
+            return res;
+        },
+
+        /* ---------------------------------------------
            READING SESSION SECURITY (PIN Protection)
         --------------------------------------------- */
         async getReadingSecurityStatus() {

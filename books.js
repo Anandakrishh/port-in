@@ -1531,9 +1531,9 @@
                             <strong>${completed}</strong> of <strong>${targetGoal}</strong> books completed
                         </h3>
                     </div>
-                    <button type="button" class="challenge-edit-btn" id="editGoalBtn" aria-label="Edit reading goal">
-                        ⚙️ Goal (${targetGoal})
-                    </button>
+                    <span class="challenge-goal-badge" id="challengeGoalBadge" aria-label="Annual reading goal">
+                        Annual Goal: ${targetGoal} ${targetGoal === 1 ? "book" : "books"}
+                    </span>
                 </div>
 
                 <div class="challenge-progress-bar">
@@ -1547,37 +1547,6 @@
                 </div>
             </div>
         `;
-
-        document.getElementById("editGoalBtn")?.addEventListener("click", promptEditGoal);
-    }
-
-    async function promptEditGoal() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const currentTarget = (state.goals && state.goals[year]) ? state.goals[year].target : 12;
-
-        const input = window.prompt(`Set your ${year} Annual Reading Challenge Goal:`, currentTarget);
-        if (input === null) return;
-
-        const num = parseInt(input, 10);
-        if (isNaN(num) || num <= 0) {
-            window.alert("Please enter a valid positive number for your goal.");
-            return;
-        }
-
-        if (!state.goals) state.goals = {};
-        state.goals[year] = { target: num };
-
-        try {
-            localStorage.setItem("books_reading_goals", JSON.stringify(state.goals));
-            if (window.cfClient) {
-                const cloudState = await window.cfClient.getState().catch(() => ({}));
-                cloudState.reading_goals = state.goals;
-                await window.cfClient.saveState(cloudState).catch(() => {});
-            }
-        } catch (_) {}
-
-        renderReadingGoal();
     }
 
     /* ==============================================================
@@ -2413,12 +2382,16 @@
         // 2. Asynchronous remote sync
         try {
             if (window.cfClient) {
-                const [booksRes, stateRes] = await Promise.all([
+                const [booksRes, stateRes, goalsRes] = await Promise.all([
                     window.cfClient.getRecords("books").catch(() => []),
-                    window.cfClient.getState().catch(() => ({}))
+                    window.cfClient.getState().catch(() => ({})),
+                    window.cfClient.getReadingGoals ? window.cfClient.getReadingGoals().catch(() => ({})) : Promise.resolve({})
                 ]);
                 const cloudBooks = Array.isArray(booksRes) ? booksRes : [];
                 const cloudState = stateRes || {};
+                if (goalsRes && typeof goalsRes === "object" && Object.keys(goalsRes).length > 0) {
+                    cloudState.reading_goals = { ...(cloudState.reading_goals || {}), ...goalsRes };
+                }
                 populateStateFromData(cloudBooks, cloudState);
                 renderAll();
             }
