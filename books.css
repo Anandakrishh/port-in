@@ -1983,8 +1983,10 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
     z-index: 1000;
     display: none;
     align-items: center;
@@ -2425,23 +2427,40 @@
         flex-direction: column;
         align-items: stretch;
         gap: 12px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .book-shelf-tabs {
-        overflow-x: auto;
-        padding-bottom: 4px;
-        flex-wrap: nowrap;
-        -webkit-overflow-scrolling: touch;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: visible;
+        padding-bottom: 0;
     }
 
     .shelf-tab {
+        flex: 1 1 calc(50% - 4px);
+        min-width: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         white-space: nowrap;
-        padding: 6px 12px;
+        padding: 8px 8px;
         font-size: 12px;
+        gap: 6px;
+        box-sizing: border-box;
     }
 
     .book-search-wrap {
+        width: 100%;
         max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
     }
 
     .book-calendar-widget,
@@ -2511,6 +2530,23 @@
 @media (max-width: 375px) {
     .books-container {
         padding: 16px 8px 40px !important;
+    }
+
+    .book-shelf-tabs {
+        gap: 6px;
+    }
+
+    .shelf-tab {
+        flex: 1 1 calc(50% - 3px);
+        padding: 7px 5px;
+        font-size: 11px;
+        gap: 4px;
+        border-radius: 10px;
+    }
+
+    .shelf-pill {
+        padding: 1px 5px;
+        font-size: 9px;
     }
 
     .view-tab-btn {
