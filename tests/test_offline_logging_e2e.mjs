@@ -107,11 +107,9 @@ window.addEventListener("load", () => {
                 actsAfterValid[0].pages === 25
             );
 
-            // Check UI updated
+            // Verify public session history button is removed
             const historyToggle = document.getElementById("trackerHistoryToggleBtn");
-            record("Session history updated in UI",
-                historyToggle && historyToggle.textContent.includes("(1)")
-            );
+            record("Session history button removed from public UI", historyToggle === null);
 
             // 6. Test Start Live Timer PIN protection
             const startBtn = document.getElementById("startSessionBtn");

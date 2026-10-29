@@ -29,7 +29,6 @@
         monthlyMode: "books", // 'books' | 'pages' | 'time'
         analyticsRange: "yearly", // 'weekly' | 'monthly' | 'yearly' | 'all'
         analyticsMode: "activity", // 'activity' | 'time'
-        showRecordedSessions: false,
         books: [],
         activities: [],
         goals: {},
@@ -890,34 +889,6 @@
             }
         }
 
-        // Build recorded sessions history items
-        const sortedActivities = [...state.activities].reverse();
-        let sessionsListHtml = "";
-
-        if (sortedActivities.length === 0) {
-            sessionsListHtml = `<p class="tracker-empty-history">No sessions recorded yet. Start the timer above to log your first reading session!</p>`;
-        } else {
-            sessionsListHtml = sortedActivities.map(act => {
-                const pageText = (act.start_page && act.end_page)
-                    ? `p. ${act.start_page} – ${act.end_page} (${act.pages}p)`
-                    : (act.pages ? `${act.pages} pages` : "Session");
-                const notesText = act.notes ? `<span class="session-item-notes">"${escapeHtml(act.notes)}"</span>` : "";
-
-                return `
-                    <div class="tracker-session-item" data-id="${escapeHtml(act.id)}">
-                        <div class="session-item-left">
-                            <span class="session-item-date">${escapeHtml(act.date)}</span>
-                            <span class="session-item-title">${escapeHtml(act.book_title || "Book")}</span>
-                            <span class="session-item-pill">${escapeHtml(pageText)}</span>
-                            <span class="session-item-pill">⏱️ ${act.minutes || 0}m</span>
-                            ${notesText}
-                        </div>
-                        <button type="button" class="session-delete-btn" data-id="${escapeHtml(act.id)}" aria-label="Delete session">✕ Delete</button>
-                    </div>
-                `;
-            }).join("");
-        }
-
         container.innerHTML = `
             <div class="live-tracker-card ${live.active ? "is-running" : ""}">
                 <div class="tracker-header">
@@ -975,18 +946,6 @@
                     `}
                     <div id="trackerFeedback" class="tracker-feedback"></div>
                 </div>
-
-                <!-- Recorded Sessions History Review Section -->
-                <div class="tracker-history-section">
-                    <button type="button" id="trackerHistoryToggleBtn" class="tracker-history-toggle">
-                        📋 ${state.showRecordedSessions ? "Hide" : "View"} Recorded Sessions (${state.activities.length}) ${state.showRecordedSessions ? "▲" : "▼"}
-                    </button>
-                    <div id="trackerHistoryDrawer" class="tracker-history-drawer ${state.showRecordedSessions ? "is-open" : ""}">
-                        <div class="tracker-sessions-list">
-                            ${sessionsListHtml}
-                        </div>
-                    </div>
-                </div>
             </div>
         `;
 
@@ -1002,36 +961,6 @@
         const manualMinutesInput = document.getElementById("trackerManualMinutes");
         const notesInput = document.getElementById("trackerNotes");
         const feedback = document.getElementById("trackerFeedback");
-        const historyToggleBtn = document.getElementById("trackerHistoryToggleBtn");
-
-        // Toggle review sessions drawer
-        if (historyToggleBtn) {
-            historyToggleBtn.addEventListener("click", () => {
-                state.showRecordedSessions = !state.showRecordedSessions;
-                renderLiveSessionTracker();
-            });
-        }
-
-        // Delete recorded session handler
-        container.querySelectorAll(".session-delete-btn").forEach(btn => {
-            btn.addEventListener("click", async (e) => {
-                e.stopPropagation();
-                const actId = btn.dataset.id;
-                if (!window.confirm("Are you sure you want to delete this recorded reading session?")) return;
-
-                state.activities = state.activities.filter(a => a.id !== actId);
-                try {
-                    localStorage.setItem("books_reading_activity", JSON.stringify(state.activities));
-                    if (window.cfClient) {
-                        const cloudState = await window.cfClient.getState().catch(() => ({}));
-                        cloudState.reading_activity = state.activities;
-                        await window.cfClient.saveState(cloudState).catch(() => {});
-                    }
-                } catch (_) {}
-
-                renderAll();
-            });
-        });
 
         // Book select changes
         if (bookSelect) {
