@@ -1000,33 +1000,49 @@ export default {
                     }
 
                     const inserted = await env.DB.prepare(`SELECT * FROM ${table} WHERE id = ?`).bind(recordId).first();
+
+                    // If recordId was previously marked deleted, un-delete it
+                    try {
+                        const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'site_overrides'").first();
+                        if (row && row.value) {
+                            const state = JSON.parse(row.value);
+                            if (Array.isArray(state.deletedIds) && state.deletedIds.includes(recordId)) {
+                                state.deletedIds = state.deletedIds.filter(dId => dId !== recordId);
+                                await env.DB.prepare(
+                                    "INSERT INTO site_state (key, value, updated_at) VALUES ('site_overrides', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                                ).bind(JSON.stringify(state)).run();
+                            }
+                        }
+                    } catch (_) {}
+
                     return json(inserted, 201);
                 }
 
                 // UPDATE
                 if (request.method === "PUT" && id) {
                     const data = await request.json();
+                    const val = (v) => v !== undefined ? v : null;
 
                     if (table === "books") {
                         await env.DB.prepare(
                             "UPDATE books SET title = COALESCE(?, title), status = COALESCE(?, status), image_url = COALESCE(?, image_url) WHERE id = ?"
-                        ).bind(data.title, data.status, data.image_url, id).run();
+                        ).bind(val(data.title), val(data.status), val(data.image_url), id).run();
                     } else if (table === "movies") {
                         await env.DB.prepare(
                             "UPDATE movies SET title = COALESCE(?, title), year = COALESCE(?, year), genre = COALESCE(?, genre), rating = COALESCE(?, rating), review = COALESCE(?, review), image_url = COALESCE(?, image_url) WHERE id = ?"
-                        ).bind(data.title, data.year, data.genre, data.rating, data.review, data.image_url, id).run();
+                        ).bind(val(data.title), val(data.year), val(data.genre), val(data.rating), val(data.review), val(data.image_url), id).run();
                     } else if (table === "songs") {
                         await env.DB.prepare(
                             "UPDATE songs SET title = COALESCE(?, title), link = COALESCE(?, link), image_url = COALESCE(?, image_url) WHERE id = ?"
-                        ).bind(data.title, data.link, data.image_url, id).run();
+                        ).bind(val(data.title), val(data.link), val(data.image_url), id).run();
                     } else if (table === "pinboard") {
                         await env.DB.prepare(
                             "UPDATE pinboard SET caption = COALESCE(?, caption), media_type = COALESCE(?, media_type), media_url = COALESCE(?, media_url) WHERE id = ?"
-                        ).bind(data.caption, data.media_type, data.media_url, id).run();
+                        ).bind(val(data.caption), val(data.media_type), val(data.media_url), id).run();
                     } else if (table === "hobbies") {
                         await env.DB.prepare(
                             "UPDATE hobbies SET title = COALESCE(?, title), image_url = COALESCE(?, image_url) WHERE id = ?"
-                        ).bind(data.title, data.image_url, id).run();
+                        ).bind(val(data.title), val(data.image_url), id).run();
                     }
 
                     const updated = await env.DB.prepare(`SELECT * FROM ${table} WHERE id = ?`).bind(id).first();
@@ -1036,6 +1052,28 @@ export default {
                 // DELETE
                 if (request.method === "DELETE" && id) {
                     await env.DB.prepare(`DELETE FROM ${table} WHERE id = ?`).bind(id).run();
+
+                    // Synchronize site_state: ensure deletedIds has id and overrides[id] is purged
+                    try {
+                        const row = await env.DB.prepare("SELECT value FROM site_state WHERE key = 'site_overrides'").first();
+                        let state = { deletedIds: [], overrides: {} };
+                        if (row && row.value) {
+                            try { state = JSON.parse(row.value); } catch (_) {}
+                        }
+                        if (!Array.isArray(state.deletedIds)) state.deletedIds = [];
+                        if (!state.deletedIds.includes(id)) {
+                            state.deletedIds.push(id);
+                        }
+                        if (state.overrides && typeof state.overrides === "object" && state.overrides[id]) {
+                            delete state.overrides[id];
+                        }
+                        await env.DB.prepare(
+                            "INSERT INTO site_state (key, value, updated_at) VALUES ('site_overrides', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')"
+                        ).bind(JSON.stringify(state)).run();
+                    } catch (e) {
+                        console.warn("Could not sync deletion to site_state:", e);
+                    }
+
                     return json({ success: true, id });
                 }
             }

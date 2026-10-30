@@ -553,7 +553,7 @@
 
         // Remove deleted items (safely protect items that have active overrides)
         deletedIds.forEach(id => {
-            if (!id || overrides[id]) return;
+            if (!id) return;
             const el = document.getElementById(id) || document.querySelector(`[data-record-id="${id}"]`);
             if (el) {
                 el.remove();

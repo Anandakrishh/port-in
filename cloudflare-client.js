@@ -208,9 +208,32 @@
         },
 
         async deleteRecord(table, id) {
-            return await apiRequest(`/api/${table}/${id}`, {
+            const res = await apiRequest(`/api/${table}/${id}`, {
                 method: "DELETE"
             });
+
+            try {
+                // Update local site state cache immediately
+                let local = { deletedIds: [], overrides: {} };
+                const raw = localStorage.getItem(OLD_RECORDS_KEY);
+                if (raw) local = JSON.parse(raw);
+                if (!Array.isArray(local.deletedIds)) local.deletedIds = [];
+                if (!local.deletedIds.includes(id)) local.deletedIds.push(id);
+                if (local.overrides && local.overrides[id]) delete local.overrides[id];
+                localStorage.setItem(OLD_RECORDS_KEY, JSON.stringify(local));
+
+                // Also purge from books_overrides if it was a book
+                const bRaw = localStorage.getItem("books_overrides");
+                if (bRaw) {
+                    const bOverrides = JSON.parse(bRaw);
+                    if (bOverrides[id]) {
+                        delete bOverrides[id];
+                        localStorage.setItem("books_overrides", JSON.stringify(bOverrides));
+                    }
+                }
+            } catch (_) {}
+
+            return res;
         },
 
         /* ---------------------------------------------

@@ -102,6 +102,41 @@ db.exec(`
 `);
 
 // Pre-seed initial data if brand new
+// Pre-seed initial data if empty
+try {
+    const booksCountRow = db.prepare("SELECT count(*) as count FROM books").get();
+    if (!booksCountRow || booksCountRow.count === 0) {
+        const defaultBooks = [
+            ["book-atomic-habits", "Atomic Habits", "finished", "assets/books/atomic-habits.jpg", "2026-09-25 14:56:50"],
+            ["book-alchemist", "The Alchemist", "currently-reading", "assets/books/alchemist.jpg", "2026-09-25 14:56:50"],
+            ["book-will-you-love-me", "Will you love me?", "want-to-read", "assets/books/1.jpg", "2026-09-25 14:56:51"],
+            ["book-it-ends-with-us", "It Ends with us", "want-to-read", "assets/books/It Ends with Us_ A Novel.jpg", "2026-09-25 14:56:51"],
+            ["book-strangers-again", "Can we be Strangers again?", "want-to-read", "assets/books/2.jpg", "2026-09-25 14:56:51"]
+        ];
+        const stmt = db.prepare("INSERT OR IGNORE INTO books (id, title, status, image_url, created_at) VALUES (?, ?, ?, ?, ?)");
+        for (const b of defaultBooks) {
+            stmt.run(...b);
+        }
+    }
+
+    // Ensure site_overrides has deletedIds including book-48-laws and clean overrides
+    const siteStateRow = db.prepare("SELECT value FROM site_state WHERE key = 'site_overrides'").get();
+    let siteState = { deletedIds: ["book-48-laws"], overrides: {} };
+    if (siteStateRow && siteStateRow.value) {
+        try { siteState = JSON.parse(siteStateRow.value); } catch (_) {}
+    }
+    if (!Array.isArray(siteState.deletedIds)) siteState.deletedIds = [];
+    if (!siteState.deletedIds.includes("book-48-laws")) {
+        siteState.deletedIds.push("book-48-laws");
+    }
+    if (siteState.overrides && siteState.overrides["book-48-laws"]) {
+        delete siteState.overrides["book-48-laws"];
+    }
+    db.prepare("INSERT INTO site_state (key, value, updated_at) VALUES ('site_overrides', ?, datetime('now')) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')").run(JSON.stringify(siteState));
+} catch (e) {
+    console.warn("Could not ensure initial books in local DB:", e.message);
+}
+
 if (isNewDb) {
     const cloudDataFile = path.join(__dirname, "cloudflare-backend", "cloud-data.json");
     if (fs.existsSync(cloudDataFile)) {
@@ -132,19 +167,20 @@ const D1Mock = {
     prepare(sql) {
         return {
             bind(...params) {
+                const cleanParams = params.map(p => p === undefined ? null : p);
                 return {
                     async first() {
                         const stmt = db.prepare(sql);
-                        return stmt.get(...params) || null;
+                        return stmt.get(...cleanParams) || null;
                     },
                     async all() {
                         const stmt = db.prepare(sql);
-                        const results = stmt.all(...params);
+                        const results = stmt.all(...cleanParams);
                         return { results };
                     },
                     async run() {
                         const stmt = db.prepare(sql);
-                        stmt.run(...params);
+                        stmt.run(...cleanParams);
                         return { success: true };
                     }
                 };

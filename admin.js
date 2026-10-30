@@ -483,8 +483,23 @@
             button.addEventListener("click", async () => {
                 if (!confirm("Delete this item?")) return;
 
+                const delTable = button.dataset.deleteTable;
+                const delId = button.dataset.deleteId;
+
                 try {
-                    await cfClient.deleteRecord(button.dataset.deleteTable, button.dataset.deleteId);
+                    await cfClient.deleteRecord(delTable, delId);
+
+                    try {
+                        const state = await cfClient.getState();
+                        if (!state.deletedIds.includes(delId)) {
+                            state.deletedIds.push(delId);
+                        }
+                        if (state.overrides && state.overrides[delId]) {
+                            delete state.overrides[delId];
+                        }
+                        await cfClient.saveState(state);
+                    } catch (_) {}
+
                     loadAdminList();
                     if (currentType === "old_records") loadOldRecords();
                 } catch (err) {
@@ -981,10 +996,35 @@
                 if (!state.deletedIds.includes(record.id)) {
                     state.deletedIds.push(record.id);
                 }
+                if (state.overrides && state.overrides[record.id]) {
+                    delete state.overrides[record.id];
+                }
                 await cfClient.saveState(state);
             } else {
                 await cfClient.deleteRecord(record.table, record.id);
+                try {
+                    const state = await cfClient.getState();
+                    if (!state.deletedIds.includes(record.id)) {
+                        state.deletedIds.push(record.id);
+                    }
+                    if (state.overrides && state.overrides[record.id]) {
+                        delete state.overrides[record.id];
+                    }
+                    await cfClient.saveState(state);
+                } catch (_) {}
             }
+
+            // Clean up localStorage books_overrides if it was a book
+            try {
+                const raw = localStorage.getItem("books_overrides");
+                if (raw) {
+                    const ov = JSON.parse(raw);
+                    if (ov[record.id]) {
+                        delete ov[record.id];
+                        localStorage.setItem("books_overrides", JSON.stringify(ov));
+                    }
+                }
+            } catch (_) {}
 
             loadOldRecords();
             loadAdminList();

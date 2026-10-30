@@ -67,13 +67,6 @@
             pages: 208,
             date_finished: "2026-09-02"
         },
-        "book-48-laws": {
-            author: "Robert Greene",
-            status: "read",
-            rating: 4.5,
-            pages: 452,
-            date_finished: "2026-09-20"
-        },
         "book-will-you-love-me": {
             author: "Ravinder Singh",
             status: "read",
@@ -2101,14 +2094,46 @@
         let localOverrides = {};
         let localActivities = [];
         let localGoals = {};
+        let localDeletedIds = [];
         try {
             localOverrides = JSON.parse(localStorage.getItem("books_overrides") || "{}");
             const rawAct = localStorage.getItem("books_reading_activity");
             if (rawAct) localActivities = JSON.parse(rawAct);
             localGoals = JSON.parse(localStorage.getItem("books_reading_goals") || "{}");
+            const rawOldState = localStorage.getItem("anand_old_records_state");
+            if (rawOldState) {
+                const parsed = JSON.parse(rawOldState);
+                if (Array.isArray(parsed.deletedIds)) localDeletedIds = parsed.deletedIds;
+            }
         } catch (_) {}
 
+        // Combine deletedIds from remote state and local state
+        const deletedIds = new Set([
+            ...(Array.isArray(cloudState.deletedIds) ? cloudState.deletedIds : []),
+            ...localDeletedIds
+        ]);
+
+        // Purge any deleted items from localOverrides and cloudState.overrides
+        let overridesModified = false;
+        deletedIds.forEach(delId => {
+            if (localOverrides[delId]) {
+                delete localOverrides[delId];
+                overridesModified = true;
+            }
+            if (cloudState.overrides && cloudState.overrides[delId]) {
+                delete cloudState.overrides[delId];
+            }
+        });
+        if (overridesModified) {
+            try {
+                localStorage.setItem("books_overrides", JSON.stringify(localOverrides));
+            } catch (_) {}
+        }
+
         state.overrides = { ...CATALOG_DEFAULTS, ...localOverrides, ...(cloudState.overrides || {}) };
+        deletedIds.forEach(delId => {
+            delete state.overrides[delId];
+        });
 
         if (Array.isArray(cloudState.reading_activity)) {
             state.activities = cloudState.reading_activity;
@@ -2124,26 +2149,31 @@
 
         const booksMap = new Map();
 
-        cloudBooks.forEach(b => {
-            if (!b || !b.id) return;
-            const ov = state.overrides[b.id] || {};
-            booksMap.set(b.id, {
-                id: b.id,
-                title: ov.title || b.title || "Untitled Book",
-                author: ov.author || b.author || "",
-                status: ov.status || b.status || "read",
-                image_url: ov.image_url || b.image_url || "",
-                rating: ov.rating !== undefined ? ov.rating : (b.rating || 0),
-                pages: ov.pages || b.pages || 0,
-                date_started: ov.date_started || b.date_started || "",
-                date_finished: ov.date_finished || b.date_finished || "",
-                review: ov.review || b.review || "",
-                created_at: b.created_at
+        // 1. If cloudBooks is populated from the database, the persistent database is the Single Source of Truth
+        if (Array.isArray(cloudBooks) && cloudBooks.length > 0) {
+            cloudBooks.forEach(b => {
+                if (!b || !b.id || deletedIds.has(b.id)) return;
+                const ov = state.overrides[b.id] || {};
+                const def = CATALOG_DEFAULTS[b.id] || {};
+                booksMap.set(b.id, {
+                    id: b.id,
+                    title: ov.title || b.title || def.title || "Untitled Book",
+                    author: ov.author || b.author || def.author || "",
+                    status: ov.status || b.status || def.status || "read",
+                    image_url: ov.image_url || b.image_url || def.image_url || "",
+                    rating: ov.rating !== undefined ? ov.rating : (b.rating !== undefined ? b.rating : (def.rating || 0)),
+                    pages: ov.pages || b.pages || def.pages || 0,
+                    date_started: ov.date_started || b.date_started || def.date_started || "",
+                    date_finished: ov.date_finished || b.date_finished || def.date_finished || "",
+                    review: ov.review || b.review || def.review || "",
+                    created_at: b.created_at
+                });
             });
-        });
-
-        Object.keys(CATALOG_DEFAULTS).forEach(id => {
-            if (!booksMap.has(id)) {
+        } else {
+            // 2. Initial instant local render before remote sync completes:
+            // Load only catalog defaults that have NOT been deleted
+            Object.keys(CATALOG_DEFAULTS).forEach(id => {
+                if (deletedIds.has(id)) return;
                 const def = CATALOG_DEFAULTS[id];
                 const ov = state.overrides[id] || {};
                 let title = id.replace("book-", "").replace(/-/g, " ");
@@ -2151,7 +2181,6 @@
 
                 if (id === "book-atomic-habits") { title = "Atomic Habits"; img = "assets/books/atomic-habits.jpg"; }
                 else if (id === "book-alchemist") { title = "The Alchemist"; img = "assets/books/alchemist.jpg"; }
-                else if (id === "book-48-laws") { title = "The 48 Laws of Power"; img = "assets/books/The 48 Laws of Power.jpg"; }
                 else if (id === "book-will-you-love-me") { title = "Will you love me?"; img = "assets/books/1.jpg"; }
                 else if (id === "book-it-ends-with-us") { title = "It Ends with us"; img = "assets/books/It Ends with Us_ A Novel.jpg"; }
                 else if (id === "book-strangers-again") { title = "Can we be Strangers again?"; img = "assets/books/2.jpg"; }
@@ -2169,10 +2198,10 @@
                     review: ov.review || "",
                     created_at: "2026-09-25 14:56:50"
                 });
-            }
-        });
+            });
+        }
 
-        state.books = Array.from(booksMap.values());
+        state.books = Array.from(booksMap.values()).filter(b => !deletedIds.has(b.id));
     }
 
     /* ==============================================================
