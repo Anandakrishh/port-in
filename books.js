@@ -1987,67 +1987,96 @@
         const modal = document.getElementById("bookDetailModal");
         if (!modal) return;
 
-        document.getElementById("modalBookCover").src = book.image_url || "";
-        document.getElementById("modalBookTitle").textContent = book.title || "Untitled Book";
-        document.getElementById("modalBookAuthor").textContent = book.author ? `by ${book.author}` : "Author not specified";
-
-        const normStatus = normalizeStatus(book.status);
-        const statusSelect = document.getElementById("modalBookStatusSelect");
-        if (statusSelect) statusSelect.value = normStatus;
-
-        const ratingWrap = document.getElementById("modalBookRating");
-        if (ratingWrap) {
-            const r = book.rating || 0;
-            const full = Math.floor(r);
-            ratingWrap.textContent = r > 0 ? "★".repeat(full) + "☆".repeat(Math.max(0, 5 - full)) + ` (${r}/5)` : "Unrated";
-        }
-
-        const datesWrap = document.getElementById("modalBookDates");
-        if (datesWrap) {
-            let dateText = [];
-            if (book.date_started) dateText.push(`Started: ${book.date_started}`);
-            if (book.date_finished) dateText.push(`Finished: ${book.date_finished}`);
-            datesWrap.textContent = dateText.length > 0 ? dateText.join(" • ") : "No dates recorded";
-        }
-
-        const reviewEl = document.getElementById("modalBookNotes");
-        if (reviewEl) {
-            reviewEl.textContent = book.review || book.notes || "No notes logged for this book.";
-        }
-
-        const timelineEl = document.getElementById("modalBookTimeline");
-        if (timelineEl) {
-            const bookActs = state.activities.filter(a => a.book_id === book.id);
-            if (bookActs.length === 0) {
-                timelineEl.innerHTML = `<p class="timeline-empty">No daily reading logs recorded for this title yet.</p>`;
+        // 1. Book Cover at top
+        const coverWrap = document.getElementById("modalBookCoverWrap");
+        const coverImg = document.getElementById("modalBookCover");
+        if (coverImg && coverWrap) {
+            if (book.image_url && String(book.image_url).trim()) {
+                coverImg.src = book.image_url;
+                coverImg.alt = `${book.title || "Book"} cover`;
+                coverWrap.style.display = "";
             } else {
-                timelineEl.innerHTML = bookActs.map(a => `
-                    <div class="timeline-item">
-                        <span class="timeline-date">${escapeHtml(a.date)}</span>
-                        <span class="timeline-desc">${a.pages ? `${a.pages} pages read` : "Reading session"}${a.minutes ? ` (${a.minutes}m)` : ""}${a.notes ? ` — "${escapeHtml(a.notes)}"` : ""}</span>
-                    </div>
-                `).join("");
+                coverWrap.style.display = "none";
             }
         }
 
-        const updateStatusBtn = document.getElementById("modalUpdateStatusBtn");
-        if (updateStatusBtn) {
-            updateStatusBtn.onclick = async () => {
-                const newStatus = statusSelect.value;
-                book.status = newStatus;
+        // 2. Title and Author underneath
+        const titleEl = document.getElementById("modalBookTitle");
+        if (titleEl) {
+            titleEl.textContent = book.title || "Untitled Book";
+        }
 
-                if (newStatus === "read" && !book.date_finished) {
-                    book.date_finished = toDateString(new Date());
-                }
+        const authorEl = document.getElementById("modalBookAuthor");
+        if (authorEl) {
+            if (book.author && String(book.author).trim()) {
+                authorEl.textContent = `by ${String(book.author).trim()}`;
+                authorEl.style.display = "";
+            } else {
+                authorEl.textContent = "";
+                authorEl.style.display = "none";
+            }
+        }
 
-                saveBookOverride(book.id, {
-                    status: newStatus,
-                    date_finished: book.date_finished
-                });
+        // 3. Rating & Dates in compact metadata row
+        const metaRow = document.getElementById("modalBookMetaRow");
+        const ratingWrap = document.getElementById("modalBookRating");
+        const datesWrap = document.getElementById("modalBookDates");
 
-                renderAll();
-                closeBookDetailModal();
-            };
+        let hasRating = false;
+        let hasDates = false;
+
+        if (ratingWrap) {
+            const r = Number(book.rating);
+            if (!isNaN(r) && r > 0) {
+                const full = Math.min(5, Math.floor(r));
+                ratingWrap.textContent = "★".repeat(full) + "☆".repeat(Math.max(0, 5 - full)) + ` (${r}/5)`;
+                ratingWrap.style.display = "";
+                hasRating = true;
+            } else {
+                ratingWrap.textContent = "";
+                ratingWrap.style.display = "none";
+            }
+        }
+
+        if (datesWrap) {
+            const dateParts = [];
+            const started = book.date_started && String(book.date_started).trim();
+            const finished = book.date_finished && String(book.date_finished).trim();
+
+            if (started) {
+                dateParts.push(`Started: ${started}`);
+            }
+            if (finished) {
+                dateParts.push(`Finished: ${finished}`);
+            }
+
+            if (dateParts.length > 0) {
+                datesWrap.textContent = dateParts.join(" • ");
+                datesWrap.style.display = "";
+                hasDates = true;
+            } else {
+                datesWrap.textContent = "";
+                datesWrap.style.display = "none";
+            }
+        }
+
+        if (metaRow) {
+            metaRow.style.display = (hasRating || hasDates) ? "flex" : "none";
+        }
+
+        // 4. Notes & Review (Hide unavailable metadata rather than displaying misleading placeholders)
+        const notesSection = document.getElementById("modalBookNotesSection");
+        const notesEl = document.getElementById("modalBookNotes");
+        const reviewText = (book.review || book.notes || "").trim();
+
+        if (notesSection && notesEl) {
+            if (reviewText) {
+                notesEl.textContent = reviewText;
+                notesSection.style.display = "";
+            } else {
+                notesEl.textContent = "";
+                notesSection.style.display = "none";
+            }
         }
 
         modal.classList.add("active");
@@ -2062,21 +2091,6 @@
             modal.setAttribute("aria-hidden", "true");
             document.body.style.overflow = "";
         }
-    }
-
-    async function saveBookOverride(bookId, data) {
-        if (!state.overrides) state.overrides = {};
-        state.overrides[bookId] = { ...(state.overrides[bookId] || {}), ...data };
-
-        try {
-            localStorage.setItem("books_overrides", JSON.stringify(state.overrides));
-            if (window.cfClient) {
-                const cloudState = await window.cfClient.getState().catch(() => ({}));
-                if (!cloudState.overrides) cloudState.overrides = {};
-                cloudState.overrides[bookId] = { ...(cloudState.overrides[bookId] || {}), ...data };
-                await window.cfClient.saveState(cloudState).catch(() => {});
-            }
-        } catch (_) {}
     }
 
     /* ==============================================================
